@@ -130,7 +130,7 @@ def filter_object_results(
                 min_y_position_list=min_y_position_list,
                 max_distance_list=max_distance_list,
                 min_distance_list=min_distance_list,
-                min_point_numbers=min_point_numbers,
+                min_point_numbers=min_point_numbers,autoware_perception_evaluation/perception_eval/perception_eval/evaluation/result/perception_frame_result.py
                 target_uuids=target_uuids,
                 transforms=transforms,
             )

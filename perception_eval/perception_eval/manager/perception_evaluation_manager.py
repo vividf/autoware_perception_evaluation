@@ -21,6 +21,7 @@ from perception_eval.common.dataset import FrameGroundTruth
 from perception_eval.common.label import LabelType
 from perception_eval.config import PerceptionEvaluationConfig
 from perception_eval.evaluation import PerceptionFrameResult
+from perception_eval.evaluation import PerceptionFrameFiltered
 from perception_eval.evaluation.matching.objects_filter import divide_objects
 from perception_eval.evaluation.matching.objects_filter import divide_objects_to_num
 from perception_eval.evaluation.matching.objects_filter import filter_object_results
@@ -97,7 +98,7 @@ class PerceptionEvaluationManager(_EvaluationMangerBase):
             ground_truth_now_frame (FrameGroundTruth): FrameGroundTruth instance that has the closest
                 timestamp with `unix_time`.
             estimated_objects (List[ObjectType]): Estimated objects list.
-            critical_object_filter_config (CriticalObjectFilterConfig): Parameter config to filter objects.
+            critical_object_filter_config (Crautoware_perception_evaluation/perception_eval/perception_eval/evaluation/result/perception_frame_result.pyiticalObjectFilterConfig): Parameter config to filter objects.
             frame_pass_fail_config (PerceptionPassFailConfig):Parameter config to evaluate pass/fail.
 
         Returns:
@@ -125,6 +126,8 @@ class PerceptionEvaluationManager(_EvaluationMangerBase):
 
         self.frame_results.append(result)
         return result
+
+
 
     def _filter_objects(
         self,
@@ -213,3 +216,118 @@ class PerceptionEvaluationManager(_EvaluationMangerBase):
             scene_metrics_score.evaluate_classification(all_frame_results, all_num_gt)
 
         return scene_metrics_score
+
+
+#### TODO: Implement Nuscene way
+    def add_frame_result_vivid(
+        self,
+        unix_time: int,
+        ground_truth_now_frame: FrameGroundTruth,
+        estimated_objects: List[ObjectType],
+        critical_object_filter_config: CriticalObjectFilterConfig,
+        # frame_pass_fail_config: PerceptionPassFailConfig,
+    ) -> PerceptionFrameFiltered:
+        """Get perception result at current frame.
+
+        Evaluated result is appended to `self.frame_results`.
+
+        TODO:
+        - Arrange `CriticalObjectFilterConfig` and `PerceptionPassFailConfig` to `PerceptionFrameConfig`.
+        - Allow input `PerceptionFrameConfig` is None.
+
+        Args:
+            unix_time (int): Unix timestamp [us].
+            ground_truth_now_frame (FrameGroundTruth): FrameGroundTruth instance that has the closest
+                timestamp with `unix_time`.
+            estimated_objects (List[ObjectType]): Estimated objects list.
+            critical_object_filter_config (CriticalObjectFilterConfig): Parameter config to filter objects.
+            frame_pass_fail_config (PerceptionPassFailConfig):Parameter config to evaluate pass/fail.
+
+        Returns:
+            PerceptionFrameResult: Evaluation result.
+        """
+        estimated_objects, ground_truth_now_frame = self._filter_objects_vivid(
+            estimated_objects,
+            ground_truth_now_frame,
+        )
+
+        result = PerceptionFrameFiltered(
+            estimated_objects=estimated_objects,
+            frame_ground_truth=ground_truth_now_frame,
+            metrics_config=self.metrics_config,
+            critical_object_filter_config=critical_object_filter_config,
+            unix_time=unix_time,
+            target_labels=self.target_labels,
+        )
+
+        result.evaluate_frame()
+
+        self.frame_results.append(result)
+        return result
+    
+
+    def _filter_objects_vivid(
+        self,
+        estimated_objects: List[ObjectType],
+        frame_ground_truth: FrameGroundTruth,
+    ) -> Tuple[List[ObjectType], List[ObjectType], FrameGroundTruth]:
+        """Returns filtered list of DynamicObjectResult and FrameGroundTruth instance.
+
+        First of all, filter `estimated_objects` and `frame_ground_truth`.
+        Then generate a list of DynamicObjectResult as `object_results`.
+        Finally, filter `object_results` when `target_uuids` is specified.
+
+        Args:
+            estimated_objects (List[ObjectType]): Estimated objects list.
+            frame_ground_truth (FrameGroundTruth): FrameGroundTruth instance.
+
+        Returns:
+            #TODO
+        """
+        estimated_objects = filter_objects(
+            objects=estimated_objects,
+            is_gt=False,
+            transforms=frame_ground_truth.transforms,
+            **self.filtering_params,
+        )
+
+        frame_ground_truth.objects = filter_objects(
+            objects=frame_ground_truth.objects,
+            is_gt=True,
+            transforms=frame_ground_truth.transforms,
+            **self.filtering_params,
+        )
+
+        return estimated_objects, frame_ground_truth
+    
+
+
+    def get_scene_result_vivid(self) -> MetricsScore:
+        """Evaluate metrics score thorough a scene.
+
+        Returns:
+            scene_metrics_score (MetricsScore): MetricsScore instance.
+        """
+        # Gather objects from frame results
+        target_labels: List[LabelType] = self.target_labels
+        all_frame_results = {label: [[]] for label in target_labels}
+        all_num_gt = {label: 0 for label in target_labels}
+        used_frame: List[int] = []
+        for frame in self.frame_results:
+            obj_result_dict = divide_objects(frame.object_results, target_labels)
+            num_gt_dict = divide_objects_to_num(frame.frame_ground_truth.objects, target_labels)
+            for label in target_labels:
+                all_frame_results[label].append(obj_result_dict[label])
+                all_num_gt[label] += num_gt_dict[label]
+            used_frame.append(int(frame.frame_name))
+
+        # Calculate score
+        scene_metrics_score: MetricsScore = MetricsScore(
+            config=self.metrics_config,
+            used_frame=used_frame,
+        )
+        if self.evaluator_config.metrics_config.detection_config is not None:
+            scene_metrics_score.evaluate_detection(all_frame_results, all_num_gt)
+
+        return scene_metrics_score
+    
