@@ -15,12 +15,12 @@
 from typing import Dict
 from typing import List
 
+from perception_eval.common import DynamicObject
 from perception_eval.common.label import LabelType
 from perception_eval.evaluation.matching import MatchingMode
 from perception_eval.evaluation.metrics.detection.ap import Ap
 from perception_eval.evaluation.metrics.detection.tp_metrics import TPMetricsAp
 from perception_eval.evaluation.metrics.detection.tp_metrics import TPMetricsAph
-from perception_eval.evaluation.result.object_result import DynamicObjectWithPerceptionResult
 
 
 class Map:
@@ -45,7 +45,8 @@ class Map:
 
     def __init__(
         self,
-        object_results_dict: Dict[LabelType, List[DynamicObjectWithPerceptionResult]],
+        estimated_objects_dict: Dict[LabelType, List[DynamicObject]],
+        ground_truth_objects_dict: Dict[LabelType, List[DynamicObject]],
         num_ground_truth_dict: Dict[LabelType, int],
         target_labels: List[LabelType],
         matching_mode: MatchingMode,
@@ -61,11 +62,14 @@ class Map:
         self.aps: List[Ap] = []
         self.aphs: List[Ap] = []
         for target_label, matching_threshold in zip(target_labels, matching_threshold_list):
-            object_results = object_results_dict[target_label]
+            print("Target : ", target_label)
+            estimated_objects = estimated_objects_dict[target_label]
+            ground_truth_objects = ground_truth_objects_dict[target_label]
             num_ground_truth = num_ground_truth_dict[target_label]
             ap_ = Ap(
                 tp_metrics=TPMetricsAp(),
-                object_results=object_results,
+                estimated_objects=estimated_objects,
+                ground_truth_objects=ground_truth_objects,
                 num_ground_truth=num_ground_truth,
                 target_labels=[target_label],
                 matching_mode=matching_mode,
@@ -76,7 +80,8 @@ class Map:
             if not self.is_detection_2d:
                 aph_ = Ap(
                     tp_metrics=TPMetricsAph(),
-                    object_results=object_results,
+                    estimated_objects=estimated_objects,
+                    ground_truth_objects=ground_truth_objects,
                     num_ground_truth=num_ground_truth,
                     target_labels=[target_label],
                     matching_mode=matching_mode,

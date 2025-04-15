@@ -1,20 +1,6 @@
-# Copyright 2022 TIER IV, Inc.
-
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-
-#     http://www.apache.org/licenses/LICENSE-2.0
-
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
-
-from logging import getLogger
-import os.path as osp
+from collections import defaultdict
 from typing import Callable
+from typing import Dict
 from typing import List
 from typing import Optional
 from typing import Tuple
@@ -22,6 +8,7 @@ from typing import Union
 
 import matplotlib.pyplot as plt
 import numpy as np
+from perception_eval.common import DynamicObject
 from perception_eval.common.label import LabelType
 from perception_eval.common.threshold import get_label_threshold
 from perception_eval.evaluation.matching import MatchingMode
@@ -29,87 +16,247 @@ from perception_eval.evaluation.metrics.detection.tp_metrics import TPMetricsAp
 from perception_eval.evaluation.metrics.detection.tp_metrics import TPMetricsAph
 from perception_eval.evaluation.result.object_result import DynamicObjectWithPerceptionResult
 
-logger = getLogger(__name__)
-
 
 class Ap:
-    """AP class.
-
-    Attributes:
-        ap (float): AP (Average Precision) score.
-        matching_average (Optional[float]): Average of matching score.
-            If there are no object results, this variable is None.
-        matching_mode (MatchingMode): MatchingMode instance.
-        matching_threshold (List[float]): Thresholds list for matching.
-        matching_standard_deviation (Optional[float]): Standard deviation of matching score.
-            If there are no object results, this variable is None.
-        target_labels (List[LabelType]): Target labels list.
-        tp_metrics (TPMetrics): Mode of TP metrics.
-        ground_truth_objects_num (int): Number ground truths.
-        tp_list (List[float]): List of the number of TP objects ordered by their confidences.
-        fp_list (List[float]): List of the number of FP objects ordered by their confidences.
-
-    Args:
-        tp_metrics (TPMetrics): Mode of TP (True positive) metrics.
-        object_results (List[List[DynamicObjectWithPerceptionResult]]): Object results list.
-        num_ground_truth (int): Number of ground truths.
-        target_labels (List[LabelType]): Target labels to evaluate.
-        matching_mode (MatchingMode): Matching instance.
-        matching_threshold_list (List[float]): Thresholds list for matching.
-    """
-
     def __init__(
         self,
         tp_metrics: Union[TPMetricsAp, TPMetricsAph],
-        object_results: List[List[DynamicObjectWithPerceptionResult]],
+        estimated_objects: List[DynamicObject],
+        ground_truth_objects: List[DynamicObject],
         num_ground_truth: int,
         target_labels: List[LabelType],
         matching_mode: MatchingMode,
         matching_threshold_list: List[float],
     ) -> None:
-        self.tp_metrics: Union[TPMetricsAp, TPMetricsAph] = tp_metrics
-        self.num_ground_truth: int = num_ground_truth
+        self.tp_metrics = tp_metrics
+        self.num_ground_truth = num_ground_truth
+        self.target_labels = target_labels
+        self.matching_mode = matching_mode
+        self.matching_threshold_list = matching_threshold_list
 
-        self.target_labels: List[LabelType] = target_labels
-        self.matching_mode: MatchingMode = matching_mode
-        self.matching_threshold_list: List[float] = matching_threshold_list
+        self.tp_list: List[int] = []
+        self.fp_list: List[int] = []
+        self.conf_list: List[float] = []
 
-        all_object_results: List[DynamicObjectWithPerceptionResult] = []
-        if len(object_results) == 0 or not isinstance(object_results[0], list):
-            all_object_results = object_results
+        self.final = False
+
+        all_estimated_objects: List[DynamicObject] = []
+        if len(estimated_objects) == 0 or not isinstance(estimated_objects[0], list):
+            all_estimated_objects = estimated_objects
         else:
-            for obj_results in object_results:
-                all_object_results += obj_results
-        self.objects_results_num: int = len(all_object_results)
+            self.final = True
+            for estimated_objects_sub in estimated_objects:
+                all_estimated_objects += estimated_objects_sub
 
-        # sort by confidence
-        lambda_func: Callable[[DynamicObjectWithPerceptionResult], float] = lambda x: x.estimated_object.semantic_score
-        all_object_results.sort(key=lambda_func, reverse=True)
+        all_ground_truth_objects: List[DynamicObject] = []
+        if len(ground_truth_objects) == 0 or not isinstance(ground_truth_objects[0], list):
+            all_ground_truth_objects = ground_truth_objects
+        else:
+            for ground_truth_objects_sub in ground_truth_objects:
+                all_ground_truth_objects += ground_truth_objects_sub
 
-        # tp and fp from object results ordered by confidence
-        self.tp_list: List[float] = []
-        self.fp_list: List[float] = []
-        self.tp_list, self.fp_list = self._calculate_tp_fp(
-            tp_metrics=tp_metrics,
-            object_results=all_object_results,
-        )
+        self._calculate_tp_fp_nusc_style(all_estimated_objects, all_ground_truth_objects)
+        precision, recall = self.get_precision_recall_list()
+        self.ap = self._calculate_ap_nusc_style(precision, recall, min_recall=0.1, min_precision=0.1)
 
-        # calculate precision recall
-        precision_list: List[float] = []
-        recall_list: List[float] = []
-        precision_list, recall_list = self.get_precision_recall_list()
+        self._debug_ap(precision, recall)
 
-        # AP
-        self.ap: float = (
-            self._calculate_ap(precision_list, recall_list) if 0 < len(all_object_results) else float("inf")
-        )
-        # average and standard deviation
-        self.matching_average: Optional[float] = None
-        self.matching_standard_deviation: Optional[float] = None
-        self.matching_average, self.matching_standard_deviation = self._calculate_average_sd(
-            object_results=all_object_results,
-            matching_mode=self.matching_mode,
-        )
+    def _calculate_tp_fp_nusc_style(self, preds: List[DynamicObject], gts: List[DynamicObject]) -> None:
+        preds = sorted(preds, key=lambda x: x.semantic_score, reverse=True)
+        gt_by_time: Dict[str, List[DynamicObject]] = defaultdict(list)
+
+        for gt in gts:
+            token = f"{gt.unix_time:.1f}"
+            gt_by_time[token].append(gt)
+
+        matched_gt_ids = set()
+
+        for pred_idx, pred in enumerate(preds):
+            token = f"{pred.unix_time:.1f}"
+            pred_label = pred.semantic_label
+            candidates = gt_by_time.get(token, [])
+
+            best_dist = float("inf")
+            best_match_idx = None
+            best_match_gt = None
+
+            for gt_idx, gt in enumerate(candidates):
+                if gt.semantic_label != pred_label:
+                    continue
+                match_key = (token, gt_idx)
+                if match_key in matched_gt_ids:
+                    continue
+
+                dist = np.linalg.norm(np.array(gt.state.position[:2]) - np.array(pred.state.position[:2]))
+                if dist < best_dist:
+                    best_dist = dist
+                    best_match_idx = gt_idx
+                    best_match_gt = gt
+
+            threshold = get_label_threshold(pred_label, self.target_labels, self.matching_threshold_list)
+            is_match = best_match_idx is not None and best_dist < threshold
+
+            # 🧠 Debug info for this prediction
+            if best_match_gt is not None:
+                gt_pos = best_match_gt.state.position
+            else:
+                gt_pos = None
+            pred_pos = pred.state.position
+
+            if self.final:
+                print(
+                    f"[MATCH] #{pred_idx:04d} unix_time={token}, label={pred_label}, score={pred.semantic_score:.3f}, "
+                    f"min_dist={best_dist:.5f}, threshold={threshold:.3f}, match={'Yes' if is_match else 'No'}"
+                )
+                print(f"         PRED_POS={pred_pos[:3]}, GT_POS={gt_pos[:3] if gt_pos else 'N/A'}")
+
+            self.tp_list.append(1 if is_match else 0)
+            self.fp_list.append(0 if is_match else 1)
+            self.conf_list.append(pred.semantic_score)
+
+            if is_match:
+                matched_gt_ids.add((token, best_match_idx))
+
+        self.tp_list = np.cumsum(self.tp_list).tolist()
+        self.fp_list = np.cumsum(self.fp_list).tolist()
+
+        # 📊 Overall summary
+        for i, (tp, fp, conf) in enumerate(zip(self.tp_list, self.fp_list, self.conf_list)):
+            print(f"[#{i:04d}] TP={tp}, FP={fp}, conf={conf:.3f}")
+
+        if self.final:
+            if self.tp_list:
+                print(f"[DEBUG SUMMARY] TP: {self.tp_list[-1]}, FP: {self.fp_list[-1]}, GT: {self.num_ground_truth}")
+            else:
+                print("[DEBUG SUMMARY] No predictions matched at all — tp_list is empty.")
+
+        self.objects_results_num = sum(self.tp_list)
+
+    def get_precision_recall_list(self) -> Tuple[List[float], List[float]]:
+        precision, recall = [], []
+        for i in range(len(self.tp_list)):
+            precision.append(self.tp_list[i] / (self.tp_list[i] + self.fp_list[i]))
+            recall.append(self.tp_list[i] / self.num_ground_truth if self.num_ground_truth > 0 else 0.0)
+        return precision, recall
+
+    def _calculate_ap_nusc_style(
+        self,
+        precision_list: List[float],
+        recall_list: List[float],
+        min_recall: float,
+        min_precision: float,
+    ) -> float:
+        if len(precision_list) == 0:
+            return 0.0
+
+        tp = np.array(self.tp_list, dtype=np.float32)
+        fp = np.array(self.fp_list, dtype=np.float32)
+        precision = tp / (tp + fp)
+        recall = tp / float(self.num_ground_truth)
+
+        # Step 1: Envelope curve (right-to-left max)
+        precision_envelope = np.maximum.accumulate(precision[::-1])[::-1]
+
+        # Step 2: 101-point interpolation
+        recall_interp = np.linspace(0.0, 1.0, 101)
+        precision_interp = np.interp(recall_interp, recall, precision_envelope, right=0)
+
+        # Step 3: Filter and compute AP
+        first_ind = int(round(100 * min_recall)) + 1
+        filtered_prec = precision_interp[first_ind:] - min_precision
+        filtered_prec[filtered_prec < 0] = 0.0
+
+        return float(np.mean(filtered_prec)) / (1.0 - min_precision)
+
+    def _debug_ap(self, precision_list: List[float], recall_list: List[float]) -> None:
+        print("\n[DEBUG] ---- AP Debug Information ----")
+        print(f"# Predictions: {len(self.conf_list)}")
+        print(f"# GT: {self.num_ground_truth}")
+
+        # ➕ 新增 TP / FP summary
+        tp_sum = int(self.tp_list[-1]) if self.tp_list else 0
+        fp_sum = int(self.fp_list[-1]) if self.fp_list else 0
+        print(f"# True Positives (TP):      {tp_sum}")
+        print(f"# False Positives (FP):     {fp_sum}")
+
+        if not precision_list or not recall_list:
+            print("[DEBUG] Skipping interpolation: precision or recall list is empty.")
+            return
+
+        recall_array, indices = np.unique(recall_list, return_index=True)
+        precision_array = np.array(precision_list)[indices]
+        conf_array = np.array(self.conf_list)[indices]
+
+        recall_interp = np.linspace(0.0, 1.0, 101)
+        precision_interp = np.interp(recall_interp, recall_array, precision_array, right=0)
+        conf_interp = np.interp(recall_interp, recall_array, conf_array, right=0)
+
+        print(f"Max Recall: {max(recall_list):.3f}")
+        print(f"AP: {self.ap:.3f}")
+        print(f"Precision: {np.round(precision_interp, 8)}")
+        print(f"Recall: {np.round(recall_interp, 2)}")
+        print(f"Confidences: {np.round(conf_interp, 8)}")
+
+    def interpolate_precision_recall_list(
+        self,
+        precision_list: List[float],
+        recall_list: List[float],
+    ):
+        """[summary]
+        Interpolate precision and recall with maximum precision value per recall bins.
+        Args:
+            precision_list (List[float])
+            recall_list (List[float])
+        """
+        max_precision_list: List[float] = [precision_list[-1]]
+        max_precision_recall_list: List[float] = [recall_list[-1]]
+
+        for i in reversed(range(len(recall_list) - 1)):
+            if precision_list[i] > max_precision_list[-1]:
+                max_precision_list.append(precision_list[i])
+                max_precision_recall_list.append(recall_list[i])
+
+        # append min recall
+        max_precision_list.append(max_precision_list[-1])
+        max_precision_recall_list.append(0.0)
+
+        return max_precision_list, max_precision_recall_list
+
+    @staticmethod
+    def _calculate_average_sd(
+        object_results: List[DynamicObjectWithPerceptionResult],
+        matching_mode: MatchingMode,
+    ) -> Tuple[Optional[float], Optional[float]]:
+        """[summary]
+        Calculate average and standard deviation.
+        Args:
+            object_results (List[DynamicObjectWithPerceptionResult]): The object results
+            matching_mode (MatchingMode): [description]
+        Returns:
+            Tuple[float, float]: [description]
+        """
+
+        matching_score_list: List[float] = [
+            object_result.get_matching(matching_mode).value for object_result in object_results
+        ]
+        matching_score_list_without_none = list(filter(lambda x: x is not None, matching_score_list))
+        if len(matching_score_list_without_none) == 0:
+            return None, None
+        mean: float = np.mean(matching_score_list_without_none).item()
+        standard_deviation: float = np.std(matching_score_list_without_none).item()
+        return mean, standard_deviation
+
+    @staticmethod
+    def _get_flat_str(str_list: List[str]) -> str:
+        """
+        Example:
+            a = _get_flat_str([aaa, bbb, ccc])
+            print(a) # aaa_bbb_ccc
+        """
+        output = ""
+        for one_str in str_list:
+            output = f"{output}_{one_str}"
+        return output
 
     def save_precision_recall_graph(
         self,
@@ -119,7 +266,6 @@ class Ap:
         """[summary]
         Save visualization image of precision and recall curve.
         The circle points represent original values and the square points represent interpolated ones.
-
         Args:
             result_directory (str): The directory path to save images.
             frame_name (str): The frame name.
@@ -156,204 +302,3 @@ class Ap:
         plt.xlabel("Recall")
         plt.ylabel("Precision")
         plt.savefig(file_path)
-
-    def get_precision_recall_list(
-        self,
-    ) -> Tuple[List[float], List[float]]:
-        """[summary]
-        Calculate precision recall.
-
-        Returns:
-            Tuple[List[float], List[float]]: tp_list and fp_list
-
-        Example:
-            state
-                self.tp_list = [1, 1, 2, 3]
-                self.fp_list = [0, 1, 1, 1]
-            return
-                precision_list = [1.0, 0.5, 0.67, 0.75]
-                recall_list = [0.25, 0.25, 0.5, 0.75]
-        """
-        precisions_list: List[float] = [0.0 for _ in range(len(self.tp_list))]
-        recalls_list: List[float] = [0.0 for _ in range(len(self.tp_list))]
-
-        for i in range(len(precisions_list)):
-            precisions_list[i] = float(self.tp_list[i]) / (i + 1)
-            if self.num_ground_truth > 0:
-                recalls_list[i] = float(self.tp_list[i]) / self.num_ground_truth
-            else:
-                recalls_list[i] = 0.0
-
-        return precisions_list, recalls_list
-
-    def interpolate_precision_recall_list(
-        self,
-        precision_list: List[float],
-        recall_list: List[float],
-    ):
-        """[summary]
-        Interpolate precision and recall with maximum precision value per recall bins.
-
-        Args:
-            precision_list (List[float])
-            recall_list (List[float])
-        """
-        max_precision_list: List[float] = [precision_list[-1]]
-        max_precision_recall_list: List[float] = [recall_list[-1]]
-
-        for i in reversed(range(len(recall_list) - 1)):
-            if precision_list[i] > max_precision_list[-1]:
-                max_precision_list.append(precision_list[i])
-                max_precision_recall_list.append(recall_list[i])
-
-        # append min recall
-        max_precision_list.append(max_precision_list[-1])
-        max_precision_recall_list.append(0.0)
-
-        return max_precision_list, max_precision_recall_list
-
-    def _calculate_tp_fp(
-        self,
-        tp_metrics: Union[TPMetricsAp, TPMetricsAph],
-        object_results: List[DynamicObjectWithPerceptionResult],
-    ) -> Tuple[List[float], List[float]]:
-        """
-        Calculate TP (true positive) and FP (false positive).
-
-        Args:
-            tp_metrics (TPMetrics): The mode of TP (True positive) metrics
-            object_results (List[DynamicObjectWithPerceptionResult]): the list of objects with result
-
-        Return:
-            Tuple[tp_list, fp_list]
-
-            tp_list (List[float]): the list of TP ordered by object confidence
-            fp_list (List[float]): the list of FP ordered by object confidence
-
-        Example:
-            whether object label is correct [True, False, True, True]
-            return
-                tp_list = [1, 1, 2, 3]
-                fp_list = [0, 1, 1, 1]
-        """
-
-        # When result num is 0
-        if len(object_results) == 0:
-            if self.num_ground_truth == 0:
-                logger.debug("The size of object_results is 0")
-                return [], []
-            else:
-                tp_list: List[float] = [0.0] * self.num_ground_truth
-                fp_list: List[float] = np.arange(
-                    1,
-                    self.num_ground_truth + 1,
-                    dtype=np.float32,
-                ).tolist()
-                return tp_list, fp_list
-
-        tp_list: List[float] = [0.0 for _ in range(self.objects_results_num)]
-        fp_list: List[float] = [0.0 for _ in range(self.objects_results_num)]
-
-        for i, obj_result in enumerate(object_results):
-            matching_threshold_ = get_label_threshold(
-                semantic_label=obj_result.ground_truth_object.semantic_label
-                if obj_result.ground_truth_object is not None
-                else obj_result.estimated_object.semantic_label,
-                target_labels=self.target_labels,
-                threshold_list=self.matching_threshold_list,
-            )
-            if matching_threshold_ is None:
-                continue
-            is_result_correct = obj_result.is_result_correct(
-                matching_mode=self.matching_mode,
-                matching_threshold=matching_threshold_,
-            )
-            if is_result_correct:
-                tp_list[i] = tp_metrics.get_value(obj_result)
-            else:
-                fp_list[i] = 1.0
-
-        tp_list = np.cumsum(tp_list).tolist()
-        fp_list = np.cumsum(fp_list).tolist()
-
-        return tp_list, fp_list
-
-    def _calculate_ap(
-        self,
-        precision_list: List[float],
-        recall_list: List[float],
-    ) -> float:
-        """[summary]
-        Calculate AP (average precision)
-
-        Args:
-            precision_list (List[float]): The list of precision
-            recall_list (List[float]): The list of recall
-
-        Returns:
-            float: AP
-
-        Example:
-            precision_list = [1.0, 0.5, 0.67, 0.75]
-            recall_list = [0.25, 0.25, 0.5, 0.75]
-
-            max_precision_list: List[float] = [0.75, 1.0, 1.0]
-            max_precision_recall_list: List[float] = [0.75, 0.25, 0.0]
-
-            ap = 0.75 * (0.75 - 0.25) + 1.0 * (0.25 - 0.0)
-               = 0.625
-
-        """
-
-        if len(precision_list) == 0:
-            return 0.0
-
-        max_precision_list, max_precision_recall_list = self.interpolate_precision_recall_list(
-            precision_list,
-            recall_list,
-        )
-
-        ap: float = 0.0
-        for i in range(len(max_precision_list) - 1):
-            score: float = max_precision_list[i] * (max_precision_recall_list[i] - max_precision_recall_list[i + 1])
-            ap += score
-
-        return ap
-
-    @staticmethod
-    def _calculate_average_sd(
-        object_results: List[DynamicObjectWithPerceptionResult],
-        matching_mode: MatchingMode,
-    ) -> Tuple[Optional[float], Optional[float]]:
-        """[summary]
-        Calculate average and standard deviation.
-
-        Args:
-            object_results (List[DynamicObjectWithPerceptionResult]): The object results
-            matching_mode (MatchingMode): [description]
-
-        Returns:
-            Tuple[float, float]: [description]
-        """
-
-        matching_score_list: List[float] = [
-            object_result.get_matching(matching_mode).value for object_result in object_results
-        ]
-        matching_score_list_without_none = list(filter(lambda x: x is not None, matching_score_list))
-        if len(matching_score_list_without_none) == 0:
-            return None, None
-        mean: float = np.mean(matching_score_list_without_none).item()
-        standard_deviation: float = np.std(matching_score_list_without_none).item()
-        return mean, standard_deviation
-
-    @staticmethod
-    def _get_flat_str(str_list: List[str]) -> str:
-        """
-        Example:
-            a = _get_flat_str([aaa, bbb, ccc])
-            print(a) # aaa_bbb_ccc
-        """
-        output = ""
-        for one_str in str_list:
-            output = f"{output}_{one_str}"
-        return output

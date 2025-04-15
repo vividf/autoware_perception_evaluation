@@ -15,9 +15,9 @@
 from typing import Dict
 from typing import List
 
+from perception_eval.common import DynamicObject
 from perception_eval.common.label import LabelType
 from perception_eval.evaluation.matching import MatchingMode
-from perception_eval.evaluation.result.object_result import DynamicObjectWithPerceptionResult
 
 from .classification import ClassificationMetricsScore
 from .detection import Map
@@ -119,7 +119,8 @@ class MetricsScore:
 
     def evaluate_detection(
         self,
-        object_results: Dict[LabelType, List[DynamicObjectWithPerceptionResult]],
+        estimated_objects_dict: Dict[LabelType, List[DynamicObject]],
+        ground_truth_objects_dict: Dict[LabelType, List[DynamicObject]],
         num_ground_truth: Dict[LabelType, int],
     ) -> None:
         """[summary]
@@ -128,12 +129,11 @@ class MetricsScore:
         Args:
             object_results (Dict[LabelType, List[DynamicObjectWithPerceptionResult]]): The dict of object result
         """
-        if self.tracking_config is None:
-            self.__num_gt += sum(num_ground_truth.values())
 
         for distance_threshold_ in self.detection_config.center_distance_thresholds:
             map_ = Map(
-                object_results_dict=object_results,
+                estimated_objects_dict=estimated_objects_dict,
+                ground_truth_objects_dict=ground_truth_objects_dict,
                 num_ground_truth_dict=num_ground_truth,
                 target_labels=self.detection_config.target_labels,
                 matching_mode=MatchingMode.CENTERDISTANCE,
@@ -143,7 +143,8 @@ class MetricsScore:
             self.maps.append(map_)
         for iou_threshold_2d_ in self.detection_config.iou_2d_thresholds:
             map_ = Map(
-                object_results_dict=object_results,
+                estimated_objects_dict=estimated_objects_dict,
+                ground_truth_objects_dict=ground_truth_objects_dict,
                 num_ground_truth_dict=num_ground_truth,
                 target_labels=self.detection_config.target_labels,
                 matching_mode=MatchingMode.IOU2D,
@@ -157,120 +158,33 @@ class MetricsScore:
             # TODO(vividf): Rename variable to avoid shadowing Python built-in keywords like 'map'
             for distance_bev_threshold_ in self.detection_config.center_distance_bev_thresholds:
                 map_ = Map(
-                    object_results_dict=object_results,
+                    estimated_objects_dict=estimated_objects_dict,
+                    ground_truth_objects_dict=ground_truth_objects_dict,
                     num_ground_truth_dict=num_ground_truth,
                     target_labels=self.detection_config.target_labels,
                     matching_mode=MatchingMode.CENTERDISTANCEBEV,
                     matching_threshold_list=distance_bev_threshold_,
                 )
+
                 self.maps.append(map_)
             for iou_threshold_3d_ in self.detection_config.iou_3d_thresholds:
                 map_ = Map(
-                    object_results_dict=object_results,
+                    estimated_objects_dict=estimated_objects_dict,
+                    ground_truth_objects_dict=ground_truth_objects_dict,
                     num_ground_truth_dict=num_ground_truth,
                     target_labels=self.detection_config.target_labels,
                     matching_mode=MatchingMode.IOU3D,
                     matching_threshold_list=iou_threshold_3d_,
                 )
                 self.maps.append(map_)
+
             for plane_distance_threshold_ in self.detection_config.plane_distance_thresholds:
                 map_ = Map(
-                    object_results_dict=object_results,
+                    estimated_objects_dict=estimated_objects_dict,
+                    ground_truth_objects_dict=ground_truth_objects_dict,
                     num_ground_truth_dict=num_ground_truth,
                     target_labels=self.detection_config.target_labels,
                     matching_mode=MatchingMode.PLANEDISTANCE,
                     matching_threshold_list=plane_distance_threshold_,
                 )
                 self.maps.append(map_)
-
-    def evaluate_tracking(
-        self,
-        object_results: Dict[LabelType, List[List[DynamicObjectWithPerceptionResult]]],
-        num_ground_truth: Dict[LabelType, int],
-    ) -> None:
-        """[summary]
-        Calculate tracking metrics.
-
-        NOTE:
-            object_results and ground_truth_objects must be nested list.
-            In case of evaluating single frame, [[previous], [current]].
-            In case of evaluating multi frame, [[], [t1], [t2], ..., [tn]]
-
-        Args:
-            object_results (List[List[DynamicObjectWithPerceptionResult]]): The list of object result for each frame.
-        """
-        self.__num_gt += sum(num_ground_truth.values())
-
-        for distance_threshold_ in self.tracking_config.center_distance_thresholds:
-            tracking_score_ = TrackingMetricsScore(
-                object_results_dict=object_results,
-                num_ground_truth_dict=num_ground_truth,
-                target_labels=self.tracking_config.target_labels,
-                matching_mode=MatchingMode.CENTERDISTANCE,
-                matching_threshold_list=distance_threshold_,
-            )
-            self.tracking_scores.append(tracking_score_)
-        for iou_threshold_2d_ in self.tracking_config.iou_2d_thresholds:
-            tracking_score_ = TrackingMetricsScore(
-                object_results_dict=object_results,
-                num_ground_truth_dict=num_ground_truth,
-                target_labels=self.tracking_config.target_labels,
-                matching_mode=MatchingMode.IOU2D,
-                matching_threshold_list=iou_threshold_2d_,
-            )
-            self.tracking_scores.append(tracking_score_)
-
-        if self.evaluation_task.is_3d():
-            for distance_bev_threshold_ in self.tracking_config.center_distance_bev_thresholds:
-                tracking_score_ = TrackingMetricsScore(
-                    object_results_dict=object_results,
-                    num_ground_truth_dict=num_ground_truth,
-                    target_labels=self.tracking_config.target_labels,
-                    matching_mode=MatchingMode.CENTERDISTANCEBEV,
-                    matching_threshold_list=distance_bev_threshold_,
-                )
-                self.tracking_scores.append(tracking_score_)
-            for iou_threshold_3d_ in self.tracking_config.iou_3d_thresholds:
-                tracking_score_ = TrackingMetricsScore(
-                    object_results_dict=object_results,
-                    num_ground_truth_dict=num_ground_truth,
-                    target_labels=self.tracking_config.target_labels,
-                    matching_mode=MatchingMode.IOU3D,
-                    matching_threshold_list=iou_threshold_3d_,
-                )
-                self.tracking_scores.append(tracking_score_)
-            for plane_distance_threshold_ in self.tracking_config.plane_distance_thresholds:
-                tracking_score_ = TrackingMetricsScore(
-                    object_results_dict=object_results,
-                    num_ground_truth_dict=num_ground_truth,
-                    target_labels=self.tracking_config.target_labels,
-                    matching_mode=MatchingMode.PLANEDISTANCE,
-                    matching_threshold_list=plane_distance_threshold_,
-                )
-                self.tracking_scores.append(tracking_score_)
-
-    def evaluate_prediction(
-        self,
-        object_results: Dict[LabelType, List[DynamicObjectWithPerceptionResult]],
-        num_ground_truth: Dict[LabelType, int],
-    ) -> None:
-        """[summary]
-        Calculate prediction metrics
-
-        Args:
-            object_results (List[DynamicObjectWithPerceptionResult]): The list of object result
-        """
-        pass
-
-    def evaluate_classification(
-        self,
-        object_results: Dict[LabelType, List[List[DynamicObjectWithPerceptionResult]]],
-        num_ground_truth: Dict[LabelType, int],
-    ) -> None:
-        self.__num_gt += sum(num_ground_truth.values())
-        classification_score_ = ClassificationMetricsScore(
-            object_results_dict=object_results,
-            num_ground_truth_dict=num_ground_truth,
-            target_labels=self.classification_config.target_labels,
-        )
-        self.classification_scores.append(classification_score_)
