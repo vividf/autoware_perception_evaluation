@@ -38,13 +38,10 @@ class Ap:
         self.fp_list: List[int] = []
         self.conf_list: List[float] = []
 
-        self.final = False
-
         all_estimated_objects: List[DynamicObject] = []
         if len(estimated_objects) == 0 or not isinstance(estimated_objects[0], list):
             all_estimated_objects = estimated_objects
         else:
-            self.final = True
             for estimated_objects_sub in estimated_objects:
                 all_estimated_objects += estimated_objects_sub
 
@@ -78,7 +75,6 @@ class Ap:
 
             best_dist = float("inf")
             best_match_idx = None
-            best_match_gt = None
 
             for gt_idx, gt in enumerate(candidates):
                 if gt.semantic_label != pred_label:
@@ -91,24 +87,9 @@ class Ap:
                 if dist < best_dist:
                     best_dist = dist
                     best_match_idx = gt_idx
-                    best_match_gt = gt
 
             threshold = get_label_threshold(pred_label, self.target_labels, self.matching_threshold_list)
             is_match = best_match_idx is not None and best_dist < threshold
-
-            # 🧠 Debug info for this prediction
-            if best_match_gt is not None:
-                gt_pos = best_match_gt.state.position
-            else:
-                gt_pos = None
-            pred_pos = pred.state.position
-
-            if self.final:
-                print(
-                    f"[MATCH] #{pred_idx:04d} unix_time={token}, label={pred_label}, score={pred.semantic_score:.3f}, "
-                    f"min_dist={best_dist:.5f}, threshold={threshold:.3f}, match={'Yes' if is_match else 'No'}"
-                )
-                print(f"         PRED_POS={pred_pos[:3]}, GT_POS={gt_pos[:3] if gt_pos else 'N/A'}")
 
             self.tp_list.append(1 if is_match else 0)
             self.fp_list.append(0 if is_match else 1)
@@ -120,17 +101,7 @@ class Ap:
         self.tp_list = np.cumsum(self.tp_list).tolist()
         self.fp_list = np.cumsum(self.fp_list).tolist()
 
-        # 📊 Overall summary
-        for i, (tp, fp, conf) in enumerate(zip(self.tp_list, self.fp_list, self.conf_list)):
-            print(f"[#{i:04d}] TP={tp}, FP={fp}, conf={conf:.3f}")
-
-        if self.final:
-            if self.tp_list:
-                print(f"[DEBUG SUMMARY] TP: {self.tp_list[-1]}, FP: {self.fp_list[-1]}, GT: {self.num_ground_truth}")
-            else:
-                print("[DEBUG SUMMARY] No predictions matched at all — tp_list is empty.")
-
-        self.objects_results_num = sum(self.tp_list)
+        self.objects_results_num = len(self.conf_list)
 
     def get_precision_recall_list(self) -> Tuple[List[float], List[float]]:
         precision, recall = [], []
@@ -168,12 +139,11 @@ class Ap:
 
         return float(np.mean(filtered_prec)) / (1.0 - min_precision)
 
-    def _debug_ap(self, precision_list: List[float], recall_list: List[float]) -> None:
+    def debug_ap(self, precision_list: List[float], recall_list: List[float]) -> None:
         print("\n[DEBUG] ---- AP Debug Information ----")
         print(f"# Predictions: {len(self.conf_list)}")
         print(f"# GT: {self.num_ground_truth}")
 
-        # ➕ 新增 TP / FP summary
         tp_sum = int(self.tp_list[-1]) if self.tp_list else 0
         fp_sum = int(self.fp_list[-1]) if self.fp_list else 0
         print(f"# True Positives (TP):      {tp_sum}")
@@ -197,6 +167,7 @@ class Ap:
         print(f"Recall: {np.round(recall_interp, 2)}")
         print(f"Confidences: {np.round(conf_interp, 8)}")
 
+    # ---------------------------------------------------------- #
     def interpolate_precision_recall_list(
         self,
         precision_list: List[float],

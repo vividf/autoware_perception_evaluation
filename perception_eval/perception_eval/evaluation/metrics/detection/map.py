@@ -62,7 +62,6 @@ class Map:
         self.aps: List[Ap] = []
         self.aphs: List[Ap] = []
         for target_label, matching_threshold in zip(target_labels, matching_threshold_list):
-            print("Target : ", target_label)
             estimated_objects = estimated_objects_dict[target_label]
             ground_truth_objects = ground_truth_objects_dict[target_label]
             num_ground_truth = num_ground_truth_dict[target_label]
