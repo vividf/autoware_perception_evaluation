@@ -76,7 +76,7 @@ evaluation_config = PerceptionEvaluationConfig(
 )
 
 # initialize Evaluation Manager
-evaluator = PerceptionEvaluationManager(evaluation_config=evaluation_config)
+evaluator = PerceptionEvaluationManager(evaluation_config=evaluation_config, load_ground_truth=True)
 
 critical_object_filter_config = CriticalObjectFilterConfig(...)
 pass_fail_config = PerceptionPassFailConfig(...)

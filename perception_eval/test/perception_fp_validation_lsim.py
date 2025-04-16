@@ -57,7 +57,7 @@ class FPValidationLsimMoc:
             file_log_level=logging.INFO,
         )
 
-        self.evaluator = PerceptionEvaluationManager(evaluation_config)
+        self.evaluator = PerceptionEvaluationManager(evaluation_config, load_ground_truth=True)
 
     def callback(self, unix_time: int, estimated_objects: List[ObjectType]) -> None:
         ground_truth_now_frame = self.evaluator.get_ground_truth_now_frame(unix_time)

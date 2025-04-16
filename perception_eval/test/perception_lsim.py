@@ -92,7 +92,7 @@ class PerceptionLSimMoc:
             file_log_level=logging.INFO,
         )
 
-        self.evaluator = PerceptionEvaluationManager(evaluation_config=evaluation_config)
+        self.evaluator = PerceptionEvaluationManager(evaluation_config=evaluation_config, load_ground_truth=True)
 
     def callback(
         self,

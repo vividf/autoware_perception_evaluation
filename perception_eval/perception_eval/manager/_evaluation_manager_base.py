@@ -38,24 +38,25 @@ class _EvaluationMangerBase(ABC):
         ground_truth_frames (List[FrameGroundTruth]): List of ground truths per frame.
 
     Args:
-        evaluation_config (EvaluationConfigType): Parameter config for EvaluationManager.
+        evaluation_config (EvaluationConfigType): Configuraconfigtion for EvaluationManager.
+        load_ground_truth (bool): Whether to automatically load ground truth annotations during initialization.
+    Defaults to True. Set to False if you prefer to handle ground truth loading manually — for example, in the Autoware ML evaluation pipeline.
     """
 
     @abstractmethod
-    def __init__(
-        self,
-        evaluation_config: EvaluationConfigType,
-    ) -> None:
+    def __init__(self, evaluation_config: EvaluationConfigType, load_ground_truth: bool = True) -> None:
         super().__init__()
 
         self.evaluator_config = evaluation_config
-        self.ground_truth_frames: List[FrameGroundTruth] = load_all_datasets(
-            dataset_paths=self.evaluator_config.dataset_paths,
-            evaluation_task=self.evaluator_config.evaluation_task,
-            label_converter=self.evaluator_config.label_converter,
-            frame_id=self.evaluator_config.frame_ids,
-            load_raw_data=self.evaluator_config.load_raw_data,
-        )
+
+        if load_ground_truth:
+            self.ground_truth_frames: List[FrameGroundTruth] = load_all_datasets(
+                dataset_paths=self.evaluator_config.dataset_paths,
+                evaluation_task=self.evaluator_config.evaluation_task,
+                label_converter=self.evaluator_config.label_converter,
+                frame_id=self.evaluator_config.frame_ids,
+                load_raw_data=self.evaluator_config.load_raw_data,
+            )
 
     @property
     def evaluation_task(self):

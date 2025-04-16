@@ -47,7 +47,7 @@ class SensingEvaluationManager(_EvaluationMangerBase):
         self,
         evaluation_config: SensingEvaluationConfig,
     ) -> None:
-        super().__init__(evaluation_config)
+        super().__init__(evaluation_config=evaluation_config, load_ground_truth=True)
         self.frame_results: List[SensingFrameResult] = []
         self.__visualizer = SensingVisualizer(self.evaluator_config)
 
