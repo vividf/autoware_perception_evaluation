@@ -28,8 +28,6 @@ from perception_eval.evaluation.matching.objects_filter import filter_objects
 from perception_eval.evaluation.metrics import MetricsScore
 from perception_eval.evaluation.result.perception_frame_config import CriticalObjectFilterConfig
 from perception_eval.evaluation.result.perception_frame_config import PerceptionPassFailConfig
-
-# from perception_eval.evaluation.result.perception_frame_filtered import PerceptionFrameFiltered
 from perception_eval.evaluation.result.perception_frame_result import PerceptionFrameResult
 from perception_eval.visualization import PerceptionVisualizer2D
 from perception_eval.visualization import PerceptionVisualizer3D
@@ -60,7 +58,10 @@ class PerceptionEvaluationManager(_EvaluationMangerBase):
 
     def __init__(self, evaluation_config: PerceptionEvaluationConfig, load_ground_truth: bool = True) -> None:
         super().__init__(evaluation_config=evaluation_config, load_ground_truth=load_ground_truth)
-        self.frame_results: List[PerceptionFrameResult] = []  # For classification, tracking
+        # For classification, tracking
+        # TODO(vividf): let classfication and tracking be able to use
+        self.frame_results: List[PerceptionFrameResult] = []
+        # For nuscene detection
         self.nuscene_frame_results: List[PerceptionFrameResult] = []  # Only for detection
         self.__visualizer = (
             PerceptionVisualizer2D(self.evaluator_config)
@@ -224,7 +225,6 @@ class PerceptionEvaluationManager(_EvaluationMangerBase):
 
         # For detection
         if self.evaluator_config.metrics_config.detection_config is not None:
-            print("Scene detection")
             # Gather objects from frame results
             target_labels: List[LabelType] = self.target_labels
             all_frame_results: Dict[
