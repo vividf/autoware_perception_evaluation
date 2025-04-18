@@ -14,6 +14,8 @@
 
 from typing import Dict
 from typing import List
+from typing import Tuple
+from typing import Union
 
 from perception_eval.common.label import LabelType
 from perception_eval.evaluation.matching import MatchingMode
@@ -32,7 +34,7 @@ class Map:
         map (float): mAP value.
 
     Args:
-        object_results (List[List[DynamicObjectWithPerceptionResult]]): The list of object results
+        object_results_dict (List[List[DynamicObjectWithPerceptionResult]]): The [label, object results] dictionary
         target_labels (List[LabelType]): Target labels to evaluate mAP
         matching_mode (MatchingMode): Matching mode like distance between the center of
             the object, 3d IoU.
@@ -49,7 +51,7 @@ class Map:
         num_ground_truth_dict: Dict[LabelType, int],
         target_labels: List[LabelType],
         matching_mode: MatchingMode,
-        matching_threshold_list: List[float],
+        matching_threshold_list: List[List[float]],
         is_detection_2d: bool = False,
     ) -> None:
         self.target_labels: List[LabelType] = target_labels
@@ -92,45 +94,40 @@ class Map:
         self.maph: float = sum(valid_aphs) / len(valid_aphs) if 0 < len(valid_aphs) else float("inf")
 
     def __str__(self) -> str:
-        """__str__ method
+        """Nicely formatted markdown table output."""
+        str_: str = ""
+        str_ += f"\nmAP: {self.map:.3f}, "
+        str_ += f"mAPH: {self.maph:.3f} " if not self.is_detection_2d else ""
+        str_ += f"({self.matching_mode.value})\n\n"
 
-        Returns:
-            str: Formatted string.
-        """
+        # Header
+        str_ += "|      Label      |"
+        for ap_ in self.aps:
+            label = ap_.target_labels[0].value
+            threshold = ap_.matching_threshold_list[0]
+            str_ += f" {label}({threshold}) |"
+        str_ += "\n"
 
-        str_: str = "\n"
-        str_ += f"mAP: {self.map:.3f}"
-        str_ += f", mAPH: {self.maph:.3f} " if not self.is_detection_2d else " "
-        str_ += f"({self.matching_mode.value})\n"
-        # Table
-        str_ += "\n"
-        # label
-        str_ += "|      Label |"
-        target_str: str
+        # Separator (for markdown)
+        str_ += "|:---------------:|" + ":------------:|" * len(self.aps) + "\n"
+
+        # Predict_num
+        str_ += "|   Predict_num   |"
         for ap_ in self.aps:
-            # len labels and threshold_list is always 1
-            str_ += f" {ap_.target_labels[0].value}({ap_.matching_threshold_list[0]}) | "
+            str_ += f" {ap_.objects_results_num:^12} |"
         str_ += "\n"
-        str_ += "| :--------: |"
+
+        # AP
+        str_ += "|       AP        |"
         for ap_ in self.aps:
-            str_ += " :---: |"
+            str_ += f" {ap_.ap:^12.3f} |"
         str_ += "\n"
-        str_ += "| Predict_num |"
-        for ap_ in self.aps:
-            str_ += f" {ap_.objects_results_num} |"
-        # Each label result
-        str_ += "\n"
-        str_ += "|         AP |"
-        for ap_ in self.aps:
-            str_ += f" {ap_.ap:.3f} | "
-        str_ += "\n"
+
+        # APH
         if not self.is_detection_2d:
-            str_ += "|        APH |"
+            str_ += "|      APH        |"
             for aph_ in self.aphs:
-                target_str = ""
-                for target in aph_.target_labels:
-                    target_str += target.value
-                str_ += f" {aph_.ap:.3f} | "
+                str_ += f" {aph_.ap:^12.3f} |"
             str_ += "\n"
 
         return str_

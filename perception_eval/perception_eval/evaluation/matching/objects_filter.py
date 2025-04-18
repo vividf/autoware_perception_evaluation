@@ -671,46 +671,117 @@ def _is_target_object(
     return is_target
 
 
+# def divide_objects(
+#     objects: List[Union[ObjectType, DynamicObjectWithPerceptionResult]],
+#     target_labels: Optional[List[LabelType]] = None,
+# ) -> Dict[LabelType, List[Union[ObjectType, DynamicObjectWithPerceptionResult]]]:
+#     """Divide DynamicObject or DynamicObjectWithPerceptionResult into dict mapped by their labels.
+
+#     Args:
+#         objects (List[Union[ObjectType, DynamicObjectWithPerceptionResult]]):
+#             List of ObjectType or DynamicObjectWithPerceptionResult.
+#         target_labels (Optional[List[LabelType]]): If this is specified, create empty list even
+#             if there is no object having specified label. Defaults to None.
+
+#     Returns:
+#         ret (Dict[LabelType, List[Union[ObjectType, DynamicObjectWithPerceptionResult]]]):
+#             Dict that are list of ObjectType or DynamicObjectWithPerceptionResult mapped by their labels.
+#             It depends on the type of input object.
+#     """
+#     if target_labels is not None:
+#         ret = {label: [] for label in target_labels}
+#     else:
+#         ret: Dict[LabelType, List[ObjectType]] = {}
+
+#     for obj in objects:
+#         label: LabelType = (
+#             obj.estimated_object.semantic_label.label
+#             if isinstance(obj, DynamicObjectWithPerceptionResult)
+#             else obj.semantic_label.label
+#         )
+
+#         if target_labels is not None and label not in target_labels:
+#             if isinstance(obj, DynamicObjectWithPerceptionResult) and obj.ground_truth_object is not None:
+#                 label = obj.ground_truth_object.semantic_label.label
+#             else:
+#                 continue
+
+#         if label not in ret.keys():
+#             ret[label] = [obj]
+#         else:
+#             ret[label].append(obj)
+#     return ret
+
+
 def divide_objects(
-    objects: List[Union[ObjectType, DynamicObjectWithPerceptionResult]],
+    objects: Union[
+        List[Union[ObjectType, DynamicObjectWithPerceptionResult]],
+        Dict[Tuple[str, float], List[DynamicObjectWithPerceptionResult]],
+    ],
     target_labels: Optional[List[LabelType]] = None,
-) -> Dict[LabelType, List[Union[ObjectType, DynamicObjectWithPerceptionResult]]]:
-    """Divide DynamicObject or DynamicObjectWithPerceptionResult into dict mapped by their labels.
+) -> Union[
+    Dict[LabelType, List[Union[ObjectType, DynamicObjectWithPerceptionResult]]],
+    Dict[LabelType, Dict[Tuple[str, float], List[DynamicObjectWithPerceptionResult]]],
+]:
+    """Divide objects into dict mapped by their labels. Handles both list and dict input.
 
     Args:
-        objects (List[Union[ObjectType, DynamicObjectWithPerceptionResult]]):
-            List of ObjectType or DynamicObjectWithPerceptionResult.
-        target_labels (Optional[List[LabelType]]): If this is specified, create empty list even
-            if there is no object having specified label. Defaults to None.
+        objects: Either a flat list or a dict of thresholded results.
+        target_labels: If specified, ensures all target labels exist in the result.
 
     Returns:
-        ret (Dict[LabelType, List[Union[ObjectType, DynamicObjectWithPerceptionResult]]]):
-            Dict that are list of ObjectType or DynamicObjectWithPerceptionResult mapped by their labels.
-            It depends on the type of input object.
+        Label-indexed dictionary of object lists, or nested dictionaries if input was dict.
     """
-    if target_labels is not None:
-        ret = {label: [] for label in target_labels}
+
+    def get_label(obj: Union[ObjectType, DynamicObjectWithPerceptionResult]) -> LabelType:
+        if isinstance(obj, DynamicObjectWithPerceptionResult):
+            return obj.estimated_object.semantic_label.label
+        return obj.semantic_label.label
+
+    if isinstance(objects, dict):
+        # Dict[Tuple[str, float], List[DynamicObjectWithPerceptionResult]]
+        result: Dict[LabelType, Dict[Tuple[str, float], List[DynamicObjectWithPerceptionResult]]]
+
+        if target_labels is not None:
+            result = {label: {} for label in target_labels}
+            result = {}
+
+        for key, object_list in objects.items():
+            for obj in object_list:
+                label = get_label(obj)
+
+                if target_labels is not None and label not in target_labels:
+                    if obj.ground_truth_object is not None:
+                        label = obj.ground_truth_object.semantic_label.label
+                    else:
+                        continue
+
+                if label not in result:
+                    result[label] = {}  # fallback in case not initialized above
+                if key not in result[label]:
+                    result[label][key] = []
+                result[label][key].append(obj)
+        return result
     else:
-        ret: Dict[LabelType, List[ObjectType]] = {}
+        # List[ObjectType or DynamicObjectWithPerceptionResult]
+        result: Dict[LabelType, List[Union[ObjectType, DynamicObjectWithPerceptionResult]]] = {}
 
-    for obj in objects:
-        label: LabelType = (
-            obj.estimated_object.semantic_label.label
-            if isinstance(obj, DynamicObjectWithPerceptionResult)
-            else obj.semantic_label.label
-        )
+        if target_labels is not None:
+            result = {label: [] for label in target_labels}
 
-        if target_labels is not None and label not in target_labels:
-            if isinstance(obj, DynamicObjectWithPerceptionResult) and obj.ground_truth_object is not None:
-                label = obj.ground_truth_object.semantic_label.label
-            else:
-                continue
+        for obj in objects:
+            label = get_label(obj)
 
-        if label not in ret.keys():
-            ret[label] = [obj]
-        else:
-            ret[label].append(obj)
-    return ret
+            if target_labels is not None and label not in target_labels:
+                if isinstance(obj, DynamicObjectWithPerceptionResult) and obj.ground_truth_object is not None:
+                    label = obj.ground_truth_object.semantic_label.label
+                else:
+                    continue
+
+            if label not in result:
+                result[label] = []
+            result[label].append(obj)
+        return result
 
 
 def divide_objects_to_num(

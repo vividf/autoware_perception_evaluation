@@ -323,6 +323,111 @@ class DynamicObjectWithPerceptionResult:
         )
 
 
+# TODO(vivid): modify arg explaination
+def get_nuscene_object_results(
+    evaluation_task: EvaluationTask,
+    estimated_objects: List[ObjectType],
+    ground_truth_objects: List[ObjectType],
+    target_labels: Optional[List[LabelType]] = None,
+    matching_label_policy: MatchingLabelPolicy = MatchingLabelPolicy.DEFAULT,
+    matching_mode: MatchingMode = MatchingMode.CENTERDISTANCE,
+    matchable_thresholds: Optional[List[float]] = None,
+    transforms: Optional[TransformDict] = None,
+    metrics_config: "MetricsScoreConfig" = None,
+) -> Dict[Tuple[str, float], List[DynamicObjectWithPerceptionResult]]:
+    """Returns list of DynamicObjectWithPerceptionResult.
+
+    For classification, matching objects their uuid.
+    Otherwise, matching them depending on their center distance by default.
+
+    In case of FP validation, estimated objects, which have no matching GT, will be ignored.
+    Otherwise, they all are FP.
+
+    Args:
+        evaluation_task (EvaluationTask): Evaluation task.
+        estimated_objects (List[ObjectType]): Estimated objects list.
+        ground_truth_objects (List[ObjectType]): Ground truth objects list.
+        target_labels (Optional[List[LabelType]]): List of labels.
+        matching_label_policy (MatchingLabelPolicy, optional): Policy of matching objects.
+            Defaults to MatchingLabelPolicy.DEFAULT.
+        matching_mode (MatchingMode): MatchingMode instance.
+        matchable_thresholds (Optional[List[float]]): Thresholds to be.
+        transforms (Optional[TransformDict]): Transforms to be applied.
+
+    Returns:
+        object_results (List[DynamicObjectWithPerceptionResult]): Object results list.
+    """
+
+    from perception_eval.evaluation.metrics.metrics_score_config import MetricsScoreConfig
+
+    # There is no estimated object (= all FN)
+    if not estimated_objects:
+        return []
+
+    matching_config_map = {
+        "CENTERDISTANCE": metrics_config.detection_config.center_distance_thresholds,
+        "CENTERDISTANCEBEV": metrics_config.detection_config.center_distance_bev_thresholds,
+        "PLANEDISTANCE": metrics_config.detection_config.plane_distance_thresholds,
+        "IOU2D": metrics_config.detection_config.iou_2d_thresholds,
+        "IOU3D": metrics_config.detection_config.iou_3d_thresholds,
+    }
+
+    object_results_dict: Dict[Tuple[str, float], List[DynamicObjectWithPerceptionResult]] = {}
+    estimated_objects_sorted = sorted(estimated_objects, key=lambda x: x.semantic_score, reverse=True)
+
+    for matching_mode_str, threshold_list in matching_config_map.items():
+        if not threshold_list:
+            continue  # skip if config is None
+
+        matching_mode = MatchingMode[matching_mode_str]
+        matching_method_module, _ = _get_matching_module(matching_mode)
+        print(f"matching_mode: {matching_mode_str}, threshold_list: {threshold_list}")
+        for threshold in threshold_list:
+            print(f"threshold: {threshold}, type: {type(threshold)}")
+            object_results: List[DynamicObjectWithPerceptionResult] = []
+            matched_gt_ids = set()
+
+            # TODO(vivid): fix this
+            threshold = threshold[0]
+
+            for est_obj in estimated_objects_sorted:
+                best_dist = float("inf")
+                best_gt_idx = None
+
+                for gt_idx, gt_obj in enumerate(ground_truth_objects):
+                    if gt_idx in matched_gt_ids:
+                        continue
+                    if est_obj.frame_id != gt_obj.frame_id:
+                        continue
+                    if not matching_label_policy.is_matchable(est_obj, gt_obj):
+                        continue
+
+                    dist = matching_method_module(est_obj, gt_obj).value
+                    if dist < best_dist:
+                        best_dist = dist
+                        best_gt_idx = gt_idx
+
+                is_match = best_gt_idx is not None and best_dist < threshold
+                if is_match:
+                    matched_gt = ground_truth_objects[best_gt_idx]
+                    matched_gt_ids.add(best_gt_idx)
+                    result = DynamicObjectWithPerceptionResult(
+                        est_obj, matched_gt, matching_label_policy, transforms=transforms
+                    )
+                    object_results.append(result)
+                else:
+                    if not evaluation_task.is_fp_validation():
+                        object_results.append(
+                            DynamicObjectWithPerceptionResult(
+                                est_obj, None, matching_label_policy, transforms=transforms
+                            )
+                        )
+
+            object_results_dict[(matching_mode_str, threshold)] = object_results
+
+    return object_results_dict
+
+
 def get_object_results(
     evaluation_task: EvaluationTask,
     estimated_objects: List[ObjectType],

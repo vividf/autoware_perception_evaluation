@@ -13,6 +13,7 @@
 # limitations under the License.
 
 
+from typing import Dict
 from typing import List
 from typing import Tuple
 
@@ -27,7 +28,8 @@ from perception_eval.evaluation.matching.objects_filter import filter_objects
 from perception_eval.evaluation.metrics import MetricsScore
 from perception_eval.evaluation.result.perception_frame_config import CriticalObjectFilterConfig
 from perception_eval.evaluation.result.perception_frame_config import PerceptionPassFailConfig
-from perception_eval.evaluation.result.perception_frame_filtered import PerceptionFrameFiltered
+
+# from perception_eval.evaluation.result.perception_frame_filtered import PerceptionFrameFiltered
 from perception_eval.evaluation.result.perception_frame_result import PerceptionFrameResult
 from perception_eval.visualization import PerceptionVisualizer2D
 from perception_eval.visualization import PerceptionVisualizer3D
@@ -35,6 +37,7 @@ from perception_eval.visualization import PerceptionVisualizerType
 
 from ._evaluation_manager_base import _EvaluationMangerBase
 from ..evaluation.result.object_result import DynamicObjectWithPerceptionResult
+from ..evaluation.result.object_result import get_nuscene_object_results
 from ..evaluation.result.object_result import get_object_results
 
 
@@ -57,7 +60,8 @@ class PerceptionEvaluationManager(_EvaluationMangerBase):
 
     def __init__(self, evaluation_config: PerceptionEvaluationConfig, load_ground_truth: bool = True) -> None:
         super().__init__(evaluation_config=evaluation_config, load_ground_truth=load_ground_truth)
-        self.frame_results: List[PerceptionFrameResult] = []
+        self.frame_results: List[PerceptionFrameResult] = []  # For classification, tracking
+        self.nuscene_frame_results: List[PerceptionFrameResult] = []  # Only for detection
         self.__visualizer = (
             PerceptionVisualizer2D(self.evaluator_config)
             if self.evaluation_task.is_2d()
@@ -103,14 +107,13 @@ class PerceptionEvaluationManager(_EvaluationMangerBase):
         Returns:
             PerceptionFrameResult: Evaluation result.
         """
-        object_results, ground_truth_now_frame = self._filter_objects(
-            estimated_objects,
-            ground_truth_now_frame,
-        )
 
+        nuscene_object_results, nuscene_ground_truth_now_frame = self._filter_objects(
+            estimated_objects, ground_truth_now_frame, True
+        )
         result = PerceptionFrameResult(
-            object_results=object_results,
-            frame_ground_truth=ground_truth_now_frame,
+            object_results=nuscene_object_results,
+            frame_ground_truth=nuscene_ground_truth_now_frame,
             metrics_config=self.metrics_config,
             critical_object_filter_config=critical_object_filter_config,
             frame_pass_fail_config=frame_pass_fail_config,
@@ -118,18 +121,36 @@ class PerceptionEvaluationManager(_EvaluationMangerBase):
             target_labels=self.target_labels,
         )
 
-        if len(self.frame_results) > 0:
-            result.evaluate_frame(previous_result=self.frame_results[-1])
-        else:
-            result.evaluate_frame()
+        result.evaluate_nuscene_frame()
+        self.nuscene_frame_results.append(result)
 
-        self.frame_results.append(result)
+        # object_results, ground_truth_now_frame = self._filter_objects(
+        #     estimated_objects,
+        #     ground_truth_now_frame,
+        #     False
+        # )
+
+        # result = PerceptionFrameResult(
+        #     object_results=object_results,
+        #     frame_ground_truth=ground_truth_now_frame,
+        #     metrics_config=self.metrics_config,
+        #     critical_object_filter_config=critical_object_filter_config,
+        #     frame_pass_fail_config=frame_pass_fail_config,
+        #     unix_time=unix_time,
+        #     target_labels=self.target_labels,
+        # )
+
+        # if len(self.frame_results) > 0:
+        #     result.evaluate_frame(previous_result=self.frame_results[-1])
+        # else:
+        #     result.evaluate_frame()
+
+        # self.frame_results.append(result)
+
         return result
 
     def _filter_objects(
-        self,
-        estimated_objects: List[ObjectType],
-        frame_ground_truth: FrameGroundTruth,
+        self, estimated_objects: List[ObjectType], frame_ground_truth: FrameGroundTruth, is_nuscene: bool
     ) -> Tuple[List[DynamicObjectWithPerceptionResult], FrameGroundTruth]:
         """Returns filtered list of DynamicObjectResult and FrameGroundTruth instance.
 
@@ -159,23 +180,38 @@ class PerceptionEvaluationManager(_EvaluationMangerBase):
             **self.filtering_params,
         )
 
-        object_results: List[DynamicObjectWithPerceptionResult] = get_object_results(
-            evaluation_task=self.evaluation_task,
-            estimated_objects=estimated_objects,
-            ground_truth_objects=frame_ground_truth.objects,
-            target_labels=self.target_labels,
-            matching_label_policy=self.evaluator_config.label_params["matching_label_policy"],
-            matchable_thresholds=self.filtering_params["max_matchable_radii"],
-            transforms=frame_ground_truth.transforms,
-            uuid_matching_first=self.filtering_params["uuid_matching_first"],
-        )
-
-        if self.evaluator_config.filtering_params.get("target_uuids"):
-            object_results = filter_object_results(
-                object_results=object_results,
+        if is_nuscene:
+            object_results: Dict[
+                Tuple[str, float], List[DynamicObjectWithPerceptionResult]
+            ] = get_nuscene_object_results(
+                evaluation_task=self.evaluation_task,
+                estimated_objects=estimated_objects,
+                ground_truth_objects=frame_ground_truth.objects,
+                target_labels=self.target_labels,
+                matching_label_policy=self.evaluator_config.label_params["matching_label_policy"],
+                matchable_thresholds=self.filtering_params["max_matchable_radii"],
                 transforms=frame_ground_truth.transforms,
-                target_uuids=self.filtering_params["target_uuids"],
+                metrics_config=self.metrics_config,
             )
+
+        else:
+            object_results: List[DynamicObjectWithPerceptionResult] = get_object_results(
+                evaluation_task=self.evaluation_task,
+                estimated_objects=estimated_objects,
+                ground_truth_objects=frame_ground_truth.objects,
+                target_labels=self.target_labels,
+                matching_label_policy=self.evaluator_config.label_params["matching_label_policy"],
+                matchable_thresholds=self.filtering_params["max_matchable_radii"],
+                transforms=frame_ground_truth.transforms,
+                uuid_matching_first=self.filtering_params["uuid_matching_first"],
+            )
+
+            if self.evaluator_config.filtering_params.get("target_uuids"):
+                object_results = filter_object_results(
+                    object_results=object_results,
+                    transforms=frame_ground_truth.transforms,
+                    target_uuids=self.filtering_params["target_uuids"],
+                )
 
         return object_results, frame_ground_truth
 
@@ -185,140 +221,69 @@ class PerceptionEvaluationManager(_EvaluationMangerBase):
         Returns:
             scene_metrics_score (MetricsScore): MetricsScore instance.
         """
-        # Gather objects from frame results
-        target_labels: List[LabelType] = self.target_labels
-        all_frame_results = {label: [[]] for label in target_labels}
-        all_num_gt = {label: 0 for label in target_labels}
-        used_frame: List[int] = []
-        for frame in self.frame_results:
-            obj_result_dict = divide_objects(frame.object_results, target_labels)
-            num_gt_dict = divide_objects_to_num(frame.frame_ground_truth.objects, target_labels)
-            for label in target_labels:
-                all_frame_results[label].append(obj_result_dict[label])
-                all_num_gt[label] += num_gt_dict[label]
-            used_frame.append(int(frame.frame_name))
 
-        # Calculate score
-        scene_metrics_score: MetricsScore = MetricsScore(
-            config=self.metrics_config,
-            used_frame=used_frame,
-        )
+        # For detection
         if self.evaluator_config.metrics_config.detection_config is not None:
-            scene_metrics_score.evaluate_detection(all_frame_results, all_num_gt)
-        if self.evaluator_config.metrics_config.tracking_config is not None:
-            scene_metrics_score.evaluate_tracking(all_frame_results, all_num_gt)
-        if self.evaluator_config.metrics_config.prediction_config is not None:
-            pass
-        if self.evaluator_config.metrics_config.classification_config is not None:
-            scene_metrics_score.evaluate_classification(all_frame_results, all_num_gt)
+            print("Scene detection")
+            # Gather objects from frame results
+            target_labels: List[LabelType] = self.target_labels
+            all_frame_results: Dict[
+                LabelType, Dict[Tuple[str, float], List[List[DynamicObjectWithPerceptionResult]]]
+            ] = {label: {} for label in target_labels}
+            all_num_gt = {label: 0 for label in target_labels}
+            used_frame: List[int] = []
 
-        return scene_metrics_score
+            for frame in self.nuscene_frame_results:
+                obj_result_dict = divide_objects(
+                    frame.object_results, target_labels
+                )  # Dict[LabelType, Dict[Tuple[str, float], List[DynamicObjectWithPerceptionResult]]]
+                num_gt_dict = divide_objects_to_num(frame.frame_ground_truth.objects, target_labels)
 
-    #### TODO: Implement Nuscene way
-    def add_frame_result_vivid(
-        self,
-        unix_time: int,
-        ground_truth_now_frame: FrameGroundTruth,
-        estimated_objects: List[ObjectType],
-        critical_object_filter_config: CriticalObjectFilterConfig,
-        # frame_pass_fail_config: PerceptionPassFailConfig,
-    ) -> PerceptionFrameFiltered:
-        """Get perception result at current frame.
-        Evaluated result is appended to `self.frame_results`.
-        TODO:
-        - Arrange `CriticalObjectFilterConfig` and `PerceptionPassFailConfig` to `PerceptionFrameConfig`.
-        - Allow input `PerceptionFrameConfig` is None.
-        Args:
-            unix_time (int): Unix timestamp [us].
-            ground_truth_now_frame (FrameGroundTruth): FrameGroundTruth instance that has the closest
-                timestamp with `unix_time`.
-            estimated_objects (List[ObjectType]): Estimated objects list.
-            critical_object_filter_config (CriticalObjectFilterConfig): Parameter config to filter objects.
-            frame_pass_fail_config (PerceptionPassFailConfig):Parameter config to evaluate pass/fail.
-        Returns:
-            PerceptionFrameResult: Evaluation result.
-        """
-        estimated_objects, ground_truth_now_frame = self._filter_objects_vivid(
-            estimated_objects,
-            ground_truth_now_frame,
-        )
+                for label in target_labels:
+                    label_result: Dict[
+                        Tuple[str, float], List[DynamicObjectWithPerceptionResult]
+                    ] = obj_result_dict.get(label, {})
 
-        result = PerceptionFrameFiltered(
-            estimated_objects=estimated_objects,
-            frame_ground_truth=ground_truth_now_frame,
-            metrics_config=self.metrics_config,
-            critical_object_filter_config=critical_object_filter_config,
-            unix_time=unix_time,
-            target_labels=self.target_labels,
-        )
+                    for key, detection_list in label_result.items():  # key: (scene_id, timestamp)
+                        if key not in all_frame_results[label]:
+                            all_frame_results[label][key] = []
+                        all_frame_results[label][key].append(detection_list)  # 每一個 frame 的結果加進去
 
-        result.evaluate_frame()
+                    all_num_gt[label] += num_gt_dict[label]
 
-        self.frame_results.append(result)
-        return result
+                used_frame.append(int(frame.frame_name))
 
-    def _filter_objects_vivid(
-        self,
-        estimated_objects: List[ObjectType],
-        frame_ground_truth: FrameGroundTruth,
-    ) -> Tuple[List[ObjectType], List[ObjectType], FrameGroundTruth]:
-        """Returns filtered list of DynamicObjectResult and FrameGroundTruth instance.
-        First of all, filter `estimated_objects` and `frame_ground_truth`.
-        Then generate a list of DynamicObjectResult as `object_results`.
-        Finally, filter `object_results` when `target_uuids` is specified.
-        Args:
-            estimated_objects (List[ObjectType]): Estimated objects list.
-            frame_ground_truth (FrameGroundTruth): FrameGroundTruth instance.
-        Returns:
-            #TODO
-        """
-        estimated_objects = filter_objects(
-            objects=estimated_objects,
-            is_gt=False,
-            transforms=frame_ground_truth.transforms,
-            **self.filtering_params,
-        )
-
-        frame_ground_truth.objects = filter_objects(
-            objects=frame_ground_truth.objects,
-            is_gt=True,
-            transforms=frame_ground_truth.transforms,
-            **self.filtering_params,
-        )
-
-        return estimated_objects, frame_ground_truth
-
-    def get_scene_result_vivid(self) -> MetricsScore:
-        """Evaluate metrics score thorough a scene.
-        Returns:
-            scene_metrics_score (MetricsScore): MetricsScore instance.
-        """
-        # Gather objects from frame results
-        target_labels: List[LabelType] = self.target_labels
-        all_estimated_objects_dict = {label: [[]] for label in target_labels}
-        all_ground_truth_objects_dict = {label: [[]] for label in target_labels}
-        all_num_gt = {label: 0 for label in target_labels}
-        used_frame: List[int] = []
-        for frame in self.frame_results:
-            estimated_objects_dict = divide_objects(frame.estimated_objects, target_labels)
-            ground_truth_objects_dict = divide_objects(frame.frame_ground_truth.objects, target_labels)
-            num_gt_dict = divide_objects_to_num(frame.frame_ground_truth.objects, target_labels)
-            for label in target_labels:
-                all_estimated_objects_dict[label].append(estimated_objects_dict[label])
-                all_ground_truth_objects_dict[label].append(ground_truth_objects_dict[label])
-                all_num_gt[label] += num_gt_dict[label]
-            used_frame.append(int(frame.frame_name))
-
-        print("\n\n\n#########################")
-        print("######scene results######")
-        # Calculate score
-        scene_metrics_score: MetricsScore = MetricsScore(
-            config=self.metrics_config,
-            used_frame=used_frame,
-        )
-        if self.evaluator_config.metrics_config.detection_config is not None:
-            scene_metrics_score.evaluate_detection(
-                all_estimated_objects_dict, all_ground_truth_objects_dict, all_num_gt
+            # Calculate score
+            scene_metrics_score: MetricsScore = MetricsScore(
+                config=self.metrics_config,
+                used_frame=used_frame,
             )
+            scene_metrics_score.evaluate_detection(all_frame_results, all_num_gt)
+
+        # # Gather objects from frame results
+        # target_labels: List[LabelType] = self.target_labels
+        # all_frame_results = {label: [[]] for label in target_labels}
+        # all_num_gt = {label: 0 for label in target_labels}
+        # used_frame: List[int] = []
+        # for frame in self.frame_results:
+        #     obj_result_dict = divide_objects(frame.object_results, target_labels)
+        #     num_gt_dict = divide_objects_to_num(frame.frame_ground_truth.objects, target_labels)
+        #     for label in target_labels:
+        #         all_frame_results[label].append(obj_result_dict[label])
+        #         all_num_gt[label] += num_gt_dict[label]
+        #     used_frame.append(int(frame.frame_name))
+
+        # # Calculate score
+        # scene_metrics_score: MetricsScore = MetricsScore(
+        #     config=self.metrics_config,
+        #     used_frame=used_frame,
+        # )
+
+        # if self.evaluator_config.metrics_config.tracking_config is not None:
+        #     scene_metrics_score.evaluate_tracking(all_frame_results, all_num_gt)
+        # if self.evaluator_config.metrics_config.prediction_config is not None:
+        #     pass
+        # if self.evaluator_config.metrics_config.classification_config is not None:
+        #     scene_metrics_score.evaluate_classification(all_frame_results, all_num_gt)
 
         return scene_metrics_score

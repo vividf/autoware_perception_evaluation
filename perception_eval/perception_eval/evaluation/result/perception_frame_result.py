@@ -19,6 +19,7 @@ from typing import Dict
 from typing import List
 from typing import Optional
 from typing import Tuple
+from typing import Union
 
 from perception_eval.common import ObjectType
 from perception_eval.common.dataset import FrameGroundTruth
@@ -63,7 +64,9 @@ class PerceptionFrameResult:
 
     def __init__(
         self,
-        object_results: List[DynamicObjectWithPerceptionResult],
+        object_results: Union[
+            List[DynamicObjectWithPerceptionResult], Dict[Tuple[str, float], List[DynamicObjectWithPerceptionResult]]
+        ],
         frame_ground_truth: FrameGroundTruth,
         metrics_config: MetricsScoreConfig,
         critical_object_filter_config: CriticalObjectFilterConfig,
@@ -77,7 +80,9 @@ class PerceptionFrameResult:
         self.unix_time: int = unix_time
         self.target_labels: List[LabelType] = target_labels
 
-        self.object_results: List[DynamicObjectWithPerceptionResult] = object_results
+        self.object_results: Union[
+            List[DynamicObjectWithPerceptionResult], Dict[Tuple[str, float], List[DynamicObjectWithPerceptionResult]]
+        ] = object_results
         self.frame_ground_truth: FrameGroundTruth = frame_ground_truth
 
         # init evaluation
@@ -111,28 +116,16 @@ class PerceptionFrameResult:
             ),
         )
 
-    def evaluate_frame(
+    def evaluate_nuscene_frame(
         self,
-        previous_result: Optional[PerceptionFrameResult] = None,
     ) -> None:
         """[summary]
         Evaluate a frame from the pair of estimated objects and ground truth objects
-        Args:
-            previous_result (Optional[PerceptionFrameResult]): The previous frame result. If None, set it as empty list []. Defaults to None.
         """
-        # Filter objects by critical object filter config
-        self.object_results: List[DynamicObjectWithPerceptionResult] = filter_object_results(
-            self.object_results,
-            transform=self.frame_ground_truth.transforms,
-            **self.pass_fail_result.critical_object_filter_config.filtering_params,
-        )
 
-        self.frame_ground_truth.objects = filter_objects(
-            self.frame_ground_truth.objects,
-            is_gt=True,
-            transforms=self.frame_ground_truth.transforms,
-            **self.pass_fail_result.critical_object_filter_config.filtering_params,
-        )
+        if isinstance(self.object_results, list):
+            print("error")
+            # pring error
 
         # Divide objects by label to dict
         object_results_dict: Dict[LabelType, List[DynamicObjectWithPerceptionResult]] = divide_objects(
@@ -148,6 +141,49 @@ class PerceptionFrameResult:
         # If evaluation task is FP validation, only evaluate pass/fail result.
         if self.metrics_score.detection_config is not None:
             self.metrics_score.evaluate_detection(object_results_dict, num_ground_truth_dict)
+
+    def evaluate_frame(
+        self,
+        previous_result: Optional[PerceptionFrameResult] = None,
+    ) -> None:
+        """[summary]
+        Evaluate a frame from the pair of estimated objects and ground truth objects
+        Args:
+            previous_result (Optional[PerceptionFrameResult]): The previous frame result. If None, set it as empty list []. Defaults to None.
+        """
+
+        # Not Dict[Tuple[str, float], List[DynamicObjectWithPerceptionResult]]
+        if isinstance(self.object_results, list):
+            # Filter objects by critical object filter config
+            self.object_results: List[DynamicObjectWithPerceptionResult] = filter_object_results(
+                self.object_results,
+                transform=self.frame_ground_truth.transforms,
+                **self.pass_fail_result.critical_object_filter_config.filtering_params,
+            )
+
+            self.frame_ground_truth.objects = filter_objects(
+                self.frame_ground_truth.objects,
+                is_gt=True,
+                transforms=self.frame_ground_truth.transforms,
+                **self.pass_fail_result.critical_object_filter_config.filtering_params,
+            )
+
+        # Divide objects by label to dict
+        object_results_dict: Dict[LabelType, List[DynamicObjectWithPerceptionResult]] = divide_objects(
+            self.object_results,
+            self.pass_fail_result.critical_object_filter_config.target_labels,
+        )
+
+        num_ground_truth_dict: Dict[LabelType, int] = divide_objects_to_num(
+            self.frame_ground_truth.objects,
+            self.pass_fail_result.critical_object_filter_config.target_labels,
+        )
+
+        # If evaluation task is FP validation, only evaluate pass/fail result.
+        if self.metrics_score.detection_config is not None:
+            self.metrics_score.evaluate_detection(object_results_dict, num_ground_truth_dict)
+
+        # TODO(vivid): check these
         if self.metrics_score.tracking_config is not None:
             if previous_result is None:
                 previous_results_dict = {
@@ -166,7 +202,7 @@ class PerceptionFrameResult:
         if self.metrics_score.classification_config is not None:
             self.metrics_score.evaluate_classification(object_results_dict, num_ground_truth_dict)
 
-        self.pass_fail_result.evaluate(self.object_results, self.frame_ground_truth.objects)
+        # self.pass_fail_result.evaluate(self.object_results, self.frame_ground_truth.objects)
 
     def serialization(self) -> Dict[str, Any]:
         """Serialize the object to a dict."""
