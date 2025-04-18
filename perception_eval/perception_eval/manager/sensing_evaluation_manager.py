@@ -93,7 +93,7 @@ class SensingEvaluationManager(_EvaluationMangerBase):
             transforms=ground_truth_now_frame.transforms,
         )
 
-        ground_truth_objects: List[DynamicObject] = self._filter_objects(
+        ground_truth_objects: List[DynamicObject] = self.filter_ground_truth(
             ground_truth_now_frame,
             sensing_frame_config,
         )
@@ -113,7 +113,7 @@ class SensingEvaluationManager(_EvaluationMangerBase):
 
         return result
 
-    def _filter_objects(
+    def filter_ground_truth(
         self,
         frame_ground_truth: FrameGroundTruth,
         sensing_frame_config: SensingFrameConfig,

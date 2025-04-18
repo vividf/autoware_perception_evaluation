@@ -671,48 +671,7 @@ def _is_target_object(
     return is_target
 
 
-# def divide_objects(
-#     objects: List[Union[ObjectType, DynamicObjectWithPerceptionResult]],
-#     target_labels: Optional[List[LabelType]] = None,
-# ) -> Dict[LabelType, List[Union[ObjectType, DynamicObjectWithPerceptionResult]]]:
-#     """Divide DynamicObject or DynamicObjectWithPerceptionResult into dict mapped by their labels.
-
-#     Args:
-#         objects (List[Union[ObjectType, DynamicObjectWithPerceptionResult]]):
-#             List of ObjectType or DynamicObjectWithPerceptionResult.
-#         target_labels (Optional[List[LabelType]]): If this is specified, create empty list even
-#             if there is no object having specified label. Defaults to None.
-
-#     Returns:
-#         ret (Dict[LabelType, List[Union[ObjectType, DynamicObjectWithPerceptionResult]]]):
-#             Dict that are list of ObjectType or DynamicObjectWithPerceptionResult mapped by their labels.
-#             It depends on the type of input object.
-#     """
-#     if target_labels is not None:
-#         ret = {label: [] for label in target_labels}
-#     else:
-#         ret: Dict[LabelType, List[ObjectType]] = {}
-
-#     for obj in objects:
-#         label: LabelType = (
-#             obj.estimated_object.semantic_label.label
-#             if isinstance(obj, DynamicObjectWithPerceptionResult)
-#             else obj.semantic_label.label
-#         )
-
-#         if target_labels is not None and label not in target_labels:
-#             if isinstance(obj, DynamicObjectWithPerceptionResult) and obj.ground_truth_object is not None:
-#                 label = obj.ground_truth_object.semantic_label.label
-#             else:
-#                 continue
-
-#         if label not in ret.keys():
-#             ret[label] = [obj]
-#         else:
-#             ret[label].append(obj)
-#     return ret
-
-
+# TODO(vividf): change the naming for better understanding
 def divide_objects(
     objects: Union[
         List[Union[ObjectType, DynamicObjectWithPerceptionResult]],
@@ -739,7 +698,7 @@ def divide_objects(
         return obj.semantic_label.label
 
     if isinstance(objects, dict):
-        # Dict[Tuple[str, float], List[DynamicObjectWithPerceptionResult]]
+        # objects: Dict[Tuple[str, float], List[DynamicObjectWithPerceptionResult]]
         result: Dict[LabelType, Dict[Tuple[str, float], List[DynamicObjectWithPerceptionResult]]]
 
         if target_labels is not None:
@@ -763,7 +722,7 @@ def divide_objects(
                 result[label][key].append(obj)
         return result
     else:
-        # List[ObjectType or DynamicObjectWithPerceptionResult]
+        # objects: List[ObjectType or DynamicObjectWithPerceptionResult]
         result: Dict[LabelType, List[Union[ObjectType, DynamicObjectWithPerceptionResult]]] = {}
 
         if target_labels is not None:

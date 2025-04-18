@@ -88,11 +88,6 @@ class _EvaluationMangerBase(ABC):
         """
         pass
 
-    @abstractmethod
-    def _filter_objects(self):
-        """Filter objects with `self.filtering_params`"""
-        pass
-
     def get_ground_truth_now_frame(
         self,
         unix_time: int,
