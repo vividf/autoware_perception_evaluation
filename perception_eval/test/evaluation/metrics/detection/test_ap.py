@@ -44,8 +44,8 @@ class AnswerAP:
         self.ap (float)
         self.tp_list (List[float])
         self.fp_list (List[float])
-        self.precision_list (List[float])
-        self.recall_list (List[float])
+        self.precisions (List[float])
+        self.recalls (List[float])
         self.max_precision_list (List[float])
         self.max_precision_recall_list (List[float])
     """
@@ -55,8 +55,8 @@ class AnswerAP:
         ap: float,
         tp_list: List[float],
         fp_list: List[float],
-        precision_list: List[float],
-        recall_list: List[float],
+        precisions: List[float],
+        recalls: List[float],
         max_precision_list: List[float],
         max_precision_recall_list: List[float],
     ) -> None:
@@ -65,26 +65,26 @@ class AnswerAP:
             ap (float)
             tp_list (List[float])
             fp_list (List[float])
-            precision_list (List[float])
-            recall_list (List[float])
+            precisions (List[float])
+            recalls (List[float])
             max_precision_list (List[float])
             max_precision_recall_list (List[float])
         """
         assert len(tp_list) == len(
             fp_list
         ), f"length of TP/FP list must be same, but got {len(tp_list)} and {len(fp_list)}"
-        assert len(precision_list) == len(
-            recall_list
-        ), f"length of precision/recall list must be same, but got {len(precision_list)} and {len(recall_list)}"
+        assert len(precisions) == len(
+            recalls
+        ), f"length of precision/recall list must be same, but got {len(precisions)} and {len(recalls)}"
         assert len(max_precision_list) == len(
             max_precision_recall_list
-        ), f"length of max_precision/recall_list must be same, but got {len(max_precision_list)} and {len(max_precision_recall_list)}"
+        ), f"length of max_precision/recalls must be same, but got {len(max_precision_list)} and {len(max_precision_recall_list)}"
 
         self.ap: float = ap
         self.tp_list: List[float] = tp_list
         self.fp_list: List[float] = fp_list
-        self.precision_list: List[float] = precision_list
-        self.recall_list: List[float] = recall_list
+        self.precisions: List[float] = precisions
+        self.recalls: List[float] = recalls
         self.max_precision_list: List[float] = max_precision_list
         self.max_precision_recall_list: List[float] = max_precision_recall_list
 
@@ -99,16 +99,14 @@ class AnswerAP:
         Returns:
             AnswerAP
         """
-        precision_list, recall_list = ap.get_precision_recall_list()
-        max_precision_list, max_precision_recall_list = ap.interpolate_precision_recall_list(
-            precision_list, recall_list
-        )
+        precisions, recalls = ap.get_precision_recall()
+        max_precision_list, max_precision_recall_list = ap.interpolate_precision_recall_list(precisions, recalls)
         return AnswerAP(
             ap.ap,
             ap.tp_list,
             ap.fp_list,
-            precision_list,
-            recall_list,
+            precisions,
+            recalls,
             max_precision_list,
             max_precision_recall_list,
         )
@@ -118,8 +116,8 @@ class AnswerAP:
             isclose(self.ap, other.ap)
             and np.allclose(self.tp_list, other.tp_list)
             and np.allclose(self.fp_list, other.fp_list)
-            and np.allclose(self.precision_list, other.precision_list)
-            and np.allclose(self.recall_list, other.recall_list)
+            and np.allclose(self.precisions, other.precisions)
+            and np.allclose(self.recalls, other.recalls)
             and np.allclose(self.max_precision_list, other.max_precision_list)
             and np.allclose(self.max_precision_recall_list, other.max_precision_recall_list)
         )
@@ -129,8 +127,8 @@ class AnswerAP:
         str_ += f"ap: {self.ap}, "
         str_ += f"tp_list: {self.tp_list}, "
         str_ += f"fp_list: {self.fp_list}, "
-        str_ += f"precision_list: {self.precision_list}, "
-        str_ += f"recall_list: {self.recall_list}, "
+        str_ += f"precisions: {self.precisions}, "
+        str_ += f"recalls: {self.recalls}, "
         str_ += f"max_precision_list: {self.max_precision_list}, "
         str_ += f"max_precision_recall_list: {self.max_precision_recall_list}"
         str_ += ")"

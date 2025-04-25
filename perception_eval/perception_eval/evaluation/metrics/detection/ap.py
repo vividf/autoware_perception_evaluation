@@ -49,8 +49,8 @@ class Ap:
         target_labels (List[LabelType]): Target labels list.
         tp_metrics (TPMetrics): Mode of TP metrics.
         ground_truth_objects_num (int): Number ground truths.
-        tp_list (List[float]): List of the number of TP objects ordered by their confidences.
-        fp_list (List[float]): List of the number of FP objects ordered by their confidences.
+        tp (List[float]): List of the number of TP objects ordered by their confidences.
+        fp (List[float]): List of the number of FP objects ordered by their confidences.
 
     Args:
         tp_metrics (TPMetrics): Mode of TP (True positive) metrics.
@@ -83,9 +83,9 @@ class Ap:
             object_results=object_results,
             matching_mode=self.matching_mode,
         )
-        self.tp_list, self.fp_list = self._calculate_tp_fp(tp_metrics, object_results)
-        precision_list, recall_list = self.get_precision_recall_list()
-        self.ap = self._calculate_ap(precision_list, recall_list)
+        self.tp, self.fp = self._calculate_tp_fp(tp_metrics, object_results)
+        precisions, recalls = self.get_precision_recall()
+        self.ap = self._calculate_ap(precisions, recalls)
 
     def _calculate_tp_fp(
         self,
@@ -96,48 +96,66 @@ class Ap:
         Calculate TP/FP when object_results are stored as a dict with (matching_mode, threshold) keys.
         This assumes matching has already occurred.
         """
-        tp_list: List[float] = []
-        fp_list: List[float] = []
-        conf_list: List[float] = []
+        tp: List[float] = []
+        fp: List[float] = []
+        confidences: List[float] = []
 
         for obj in object_results:
             is_tp = obj.ground_truth_object is not None and obj.is_label_correct
-            conf_list.append(obj.estimated_object.semantic_score)
-            tp_list.append(tp_metrics.get_value(obj) if is_tp else 0.0)
-            fp_list.append(0.0 if is_tp else 1.0)
+            confidences.append(obj.estimated_object.semantic_score)
+            tp.append(tp_metrics.get_value(obj) if is_tp else 0.0)
+            fp.append(0.0 if is_tp else 1.0)
 
-        if not conf_list:
+        if not confidences:
             return [], []
 
-        # Sort by confidence
-        sorted_indices = np.argsort(conf_list)[::-1]
-        tp_sorted = [tp_list[i] for i in sorted_indices]
-        fp_sorted = [fp_list[i] for i in sorted_indices]
+        # Sort by descending confidence
+        sorted_indices = np.argsort(confidences)[::-1]
+        sorted_tp = [tp[i] for i in sorted_indices]
+        sorted_fp = [fp[i] for i in sorted_indices]
 
-        tp_list = np.cumsum(tp_sorted).tolist()
-        fp_list = np.cumsum(fp_sorted).tolist()
+        # Accumulate
+        accumulate_tp = np.cumsum(sorted_tp).tolist()
+        accumulate_tp = np.cumsum(sorted_fp).tolist()
 
-        return tp_list, fp_list
+        return accumulate_tp, accumulate_tp
 
-    def get_precision_recall_list(self) -> Tuple[List[float], List[float]]:
-        """
-        Compute the precision and recall list.
+    def get_precision_recall(
+        self,
+        tp: List[float],
+        ground_truth_objects_num: int,
+    ) -> Tuple[List[float], List[float]]:
+        """Calculate precision and recall.
+
+        Args:
+            tp (List[float]): True positives count at each rank.
+            ground_truth_objects_num (int): Number of ground truth objects.
 
         Returns:
-            Tuple[List[float], List[float]]:
-                - precision: The precision list
-                - recall: The recall list
+            Tuple[List[float], List[float]]: Precision and recall lists.
+
+        Examples:
+            >>> tp = [1, 1, 2, 3]
+            >>> ground_truth_num = 4
+            >>> precision, recall = self.get_precision_recall(tp, ground_truth_num)
+            >>> precision
+            [1.0, 0.5, 0.67, 0.75]
+            >>> recall
+            [0.25, 0.25, 0.5, 0.75]
         """
-        precision, recall = [], []
-        for i in range(len(self.tp_list)):
-            precision.append(self.tp_list[i] / (self.tp_list[i] + self.fp_list[i]))
-            recall.append(self.tp_list[i] / self.num_ground_truth if self.num_ground_truth > 0 else 0.0)
-        return precision, recall
+        precisions: List[float] = [0.0 for _ in range(len(tp))]
+        recalls: List[float] = [0.0 for _ in range(len(tp))]
+
+        for i in range(len(tp)):
+            precisions[i] = float(tp[i]) / (i + 1)
+            recalls[i] = float(tp[i]) / ground_truth_objects_num if ground_truth_objects_num > 0 else 0.0
+
+        return precisions, recalls
 
     def _calculate_ap(
         self,
-        precision_list: List[float],
-        recall_list: List[float],
+        precisions: List[float],
+        recalls: List[float],
         min_recall: float = 0.1,
         min_precision: float = 0.1,
     ) -> float:
@@ -146,22 +164,19 @@ class Ap:
         """
 
         # If there are no precision values, return AP = 0.0
-        if len(precision_list) == 0:
+        if len(precisions) == 0:
             return 0.0
-
-        tp = np.array(self.tp_list, dtype=np.float32)
-        fp = np.array(self.fp_list, dtype=np.float32)
 
         # Create a precision envelope: ensures non-increasing precision
         # max accumulate from right to left
-        precision_envelope = np.maximum.accumulate(precision_list[::-1])[::-1]
+        precision_envelope = np.maximum.accumulate(precisions[::-1])[::-1]
 
         # Define uniformly spaced recall levels for interpolation (101 points)
         recall_interp = np.linspace(0.0, 1.0, NUM_RECALL_POINTS)
 
         # Interpolate precision at those recall levels using the envelope
         # 'right=0' means values beyond the max recall get precision=0
-        precision_interp = np.interp(recall_interp, recall_list, precision_envelope, right=0)
+        precision_interp = np.interp(recall_interp, recalls, precision_envelope, right=0)
 
         # Apply a minimum recall threshold: ignore low-recall range
         first_ind = int(round(100 * min_recall)) + 1
@@ -195,15 +210,15 @@ class Ap:
                 If no valid scores are found, both values will be None.
         """
 
-        matching_score_list: List[float] = []
+        matching_scores: List[float] = []
         for obj in object_results:
             match = obj.get_matching(matching_mode)
             if match is not None and match.value is not None:
-                matching_score_list.append(match.value)
+                matching_scores.append(match.value)
 
-        if not matching_score_list:
+        if not matching_scores:
             return None, None
 
-        mean = float(np.mean(matching_score_list))
-        std = float(np.std(matching_score_list))
+        mean = float(np.mean(matching_scores))
+        std = float(np.std(matching_scores))
         return mean, std
