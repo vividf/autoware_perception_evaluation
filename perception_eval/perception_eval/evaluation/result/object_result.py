@@ -305,9 +305,10 @@ class DynamicObjectWithPerceptionResult:
             "transforms": self.transforms if self.transforms else None,
         }
 
+    @classmethod
     def deserialization(cls, data: Dict[str, Any]) -> DynamicObjectWithPerceptionResult:
         """Deserialize the data to DynamicObjectWithPerceptionResult."""
-        if data["opbject_type"] == DynamicObject2D.__name__:
+        if data["object_type"] == DynamicObject2D.__name__:
             object_type = DynamicObject2D
         elif data["object_type"] == DynamicObject.__name__:
             object_type = DynamicObject
@@ -355,7 +356,7 @@ def get_nuscene_object_results(
 
     # There is no estimated object (= all FN)
     if not estimated_objects:
-        return []
+        return {}
 
     matching_config_map = {
         mode: thresholds
