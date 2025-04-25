@@ -358,22 +358,23 @@ def get_nuscene_object_results(
         return []
 
     matching_config_map = {
-        MatchingMode.CENTERDISTANCE: metrics_config.detection_config.center_distance_thresholds,
-        MatchingMode.CENTERDISTANCEBEV: metrics_config.detection_config.center_distance_bev_thresholds,
-        MatchingMode.PLANEDISTANCE: metrics_config.detection_config.plane_distance_thresholds,
-        MatchingMode.IOU2D: metrics_config.detection_config.iou_2d_thresholds,
-        MatchingMode.IOU3D: metrics_config.detection_config.iou_3d_thresholds,
+        mode: thresholds
+        for mode, thresholds in [
+            (MatchingMode.CENTERDISTANCE, metrics_config.detection_config.center_distance_thresholds),
+            (MatchingMode.CENTERDISTANCEBEV, metrics_config.detection_config.center_distance_bev_thresholds),
+            (MatchingMode.PLANEDISTANCE, metrics_config.detection_config.plane_distance_thresholds),
+            (MatchingMode.IOU2D, metrics_config.detection_config.iou_2d_thresholds),
+            (MatchingMode.IOU3D, metrics_config.detection_config.iou_3d_thresholds),
+        ]
+        if thresholds  # Only keep entries with non-empty thresholds
     }
 
     object_results_dict: Dict[Tuple[MatchingMode, float], List[DynamicObjectWithPerceptionResult]] = {}
     estimated_objects_sorted = sorted(estimated_objects, key=lambda x: x.semantic_score, reverse=True)
 
-    for matching_mode, threshold_list in matching_config_map.items():
-        if not threshold_list:
-            continue  # skip if config is None
-
+    for matching_mode, thresholds in matching_config_map.items():
         matching_method_module, _ = _get_matching_module(matching_mode)
-        for threshold in threshold_list:
+        for threshold in thresholds:
             object_results: List[DynamicObjectWithPerceptionResult] = []
             matched_gt_ids = set()
 
