@@ -283,7 +283,7 @@ json_result = json.dump(dict_result)
 | :-------------------------- | :--------------------------: | :-------: | :----------------------------------------------------- |
 | `evaluator_config`          | `PerceptionEvaluationConfig` |    Yes    | `PerceptionEvaluationManager`の持つ config             |
 | `target_labels`             |         `List[str]`          |    No     | 評価対象ラベル名                                       |
-| `matching_thresholds`       |        `List[float]`         |    No     | マッチング閾値．3D の場合は平面距離，2D の場合は IOU． |
+| `matching_threshold_list`   |        `List[float]`         |    No     | マッチング閾値．3D の場合は平面距離，2D の場合は IOU． |
 | `confidence_threshold_list` |        `List[float]`         |    No     | 評価対象の estimated object の confidence の閾値       |
 
 ### 評価実行

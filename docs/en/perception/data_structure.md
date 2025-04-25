@@ -107,7 +107,7 @@ For the details, see [perception_eval/evaluation/result/perception_frame_result.
                       'fn_objects': ' --- length of element 17 ---,',
                       'fp_object_results': ' --- length of element 17 ---,',
                       'frame_pass_fail_config': {'confidence_threshold_list': None,
-                                                 'matching_thresholds': ' --- length of element 4 ---,',
+                                                 'matching_threshold_list': ' --- length of element 4 ---,',
                                                  'target_labels': ' --- length of element 4 ---,'},
                       'tp_object_results': ' --- length of element 22 ---,'},
  'target_labels': ' --- length of element 4 ---,',
@@ -123,7 +123,7 @@ Call `<func> get_object_results(...)` function to generate a set of matching pai
 For the details，see [perception_eval/evaluation/result/object_result.py](../../../perception_eval/perception_eval/evaluation/result/object_result.py)
 
 ```python
-from perception_eval.evaluation.result.object_results import get_object_results
+from perception_eval.evaluation.result.object_result_matching import get_object_results
 
 # REQUIRED:
 #   estimated_objects: List[ObjectType]

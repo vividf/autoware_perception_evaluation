@@ -118,7 +118,7 @@
                       'fn_objects': ' --- length of element 17 ---,',
                       'fp_object_results': ' --- length of element 17 ---,',
                       'frame_pass_fail_config': {'confidence_threshold_list': None,
-                                                 'matching_thresholds': ' --- length of element 4 ---,',
+                                                 'matching_threshold_list': ' --- length of element 4 ---,',
                                                  'target_labels': ' --- length of element 4 ---,'},
                       'tp_object_results': ' --- length of element 22 ---,'},
  'target_labels': ' --- length of element 4 ---,',
@@ -132,7 +132,7 @@
 推定オブジェクトの集合`List[ObjectType]`と GT オブジェクトの集合`List[ObjectType]`からマッチングペアの集合`List[DynamicObjectWithPerceptionResult]`を得るには，`get_object_results()`関数を使う．
 
 ```python
-from perception_eval.evaluation.result.object_results import get_object_results
+from perception_eval.evaluation.result.object_result_matching import get_object_results
 
 # REQUIRED:
 #   estimated_objects: List[ObjectType]
