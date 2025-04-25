@@ -84,7 +84,7 @@ class Ap:
             matching_mode=self.matching_mode,
         )
         self.tp, self.fp = self._calculate_tp_fp(tp_metrics, object_results)
-        precisions, recalls = self.get_precision_recall()
+        precisions, recalls = self.get_precision_recall(self.tp, self.num_ground_truth)
         self.ap = self._calculate_ap(precisions, recalls)
 
     def _calculate_tp_fp(

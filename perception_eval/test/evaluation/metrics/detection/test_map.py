@@ -28,7 +28,7 @@ from perception_eval.evaluation.matching.objects_filter import divide_objects_to
 from perception_eval.evaluation.matching.objects_filter import filter_objects
 from perception_eval.evaluation.metrics.detection.map import Map
 from perception_eval.evaluation.result.object_result import DynamicObjectWithPerceptionResult
-from perception_eval.evaluation.result.object_result import get_object_results
+from perception_eval.evaluation.result.object_result_matching import get_object_results
 from perception_eval.util.debug import get_objects_with_difference
 
 
@@ -115,7 +115,7 @@ class TestMap(unittest.TestCase):
                     num_ground_truth_dict=num_ground_truth_dict,
                     target_labels=self.target_labels,
                     matching_mode=MatchingMode.CENTERDISTANCE,
-                    matching_thresholds=[1.0, 1.0, 1.0, 1.0],
+                    matching_threshold_list=[1.0, 1.0, 1.0, 1.0],
                 )
                 self.assertAlmostEqual(map.map, ans_map)
                 self.assertAlmostEqual(map.maph, ans_maph)
@@ -194,7 +194,7 @@ class TestMap(unittest.TestCase):
                     num_ground_truth_dict=num_ground_truth_dict,
                     target_labels=self.target_labels,
                     matching_mode=MatchingMode.CENTERDISTANCE,
-                    matching_thresholds=[1.0, 1.0, 1.0, 1.0],
+                    matching_threshold_list=[1.0, 1.0, 1.0, 1.0],
                 )
                 self.assertAlmostEqual(map.map, ans_map)
                 self.assertAlmostEqual(map.maph, ans_maph)
@@ -251,7 +251,7 @@ class TestMap(unittest.TestCase):
             num_ground_truth_dict=num_ground_truth_dict,
             target_labels=self.target_labels,
             matching_mode=MatchingMode.CENTERDISTANCE,
-            matching_thresholds=[1.0, 1.0, 1.0, 1.0],
+            matching_threshold_list=[1.0, 1.0, 1.0, 1.0],
         )
         self.assertAlmostEqual(map.map, ans_map)
         self.assertAlmostEqual(map.maph, ans_maph)
@@ -322,7 +322,7 @@ class TestMap(unittest.TestCase):
                     num_ground_truth_dict=num_ground_truth_dict,
                     target_labels=self.target_labels,
                     matching_mode=MatchingMode.CENTERDISTANCEBEV,
-                    matching_thresholds=[1.0, 1.0, 1.0, 1.0],
+                    matching_threshold_list=[1.0, 1.0, 1.0, 1.0],
                 )
                 self.assertAlmostEqual(map.map, ans_map)
                 self.assertAlmostEqual(map.maph, ans_maph)
@@ -401,7 +401,7 @@ class TestMap(unittest.TestCase):
                     num_ground_truth_dict=num_ground_truth_dict,
                     target_labels=self.target_labels,
                     matching_mode=MatchingMode.CENTERDISTANCEBEV,
-                    matching_thresholds=[1.0, 1.0, 1.0, 1.0],
+                    matching_threshold_list=[1.0, 1.0, 1.0, 1.0],
                 )
                 self.assertAlmostEqual(map.map, ans_map)
                 self.assertAlmostEqual(map.maph, ans_maph)
@@ -458,7 +458,7 @@ class TestMap(unittest.TestCase):
             num_ground_truth_dict=num_ground_truth_dict,
             target_labels=self.target_labels,
             matching_mode=MatchingMode.CENTERDISTANCEBEV,
-            matching_thresholds=[1.0, 1.0, 1.0, 1.0],
+            matching_threshold_list=[1.0, 1.0, 1.0, 1.0],
         )
         self.assertAlmostEqual(map.map, ans_map)
         self.assertAlmostEqual(map.maph, ans_maph)
@@ -530,7 +530,7 @@ class TestMap(unittest.TestCase):
                     num_ground_truth_dict=num_ground_truth_dict,
                     target_labels=self.target_labels,
                     matching_mode=MatchingMode.IOU2D,
-                    matching_thresholds=[0.5, 0.5, 0.5, 0.5],
+                    matching_threshold_list=[0.5, 0.5, 0.5, 0.5],
                 )
                 self.assertAlmostEqual(map.map, ans_map)
                 self.assertAlmostEqual(map.maph, ans_maph)
@@ -609,7 +609,7 @@ class TestMap(unittest.TestCase):
                     num_ground_truth_dict=num_ground_truth_dict,
                     target_labels=self.target_labels,
                     matching_mode=MatchingMode.IOU2D,
-                    matching_thresholds=[0.5, 0.5, 0.5, 0.5],
+                    matching_threshold_list=[0.5, 0.5, 0.5, 0.5],
                 )
                 self.assertAlmostEqual(map.map, ans_map)
                 self.assertAlmostEqual(map.maph, ans_maph)
@@ -665,7 +665,7 @@ class TestMap(unittest.TestCase):
             num_ground_truth_dict=num_ground_truth_dict,
             target_labels=self.target_labels,
             matching_mode=MatchingMode.IOU2D,
-            matching_thresholds=[0.2, 0.5, 0.5, 0.5],
+            matching_threshold_list=[0.2, 0.5, 0.5, 0.5],
         )
         self.assertAlmostEqual(map.map, ans_map)
         self.assertAlmostEqual(map.maph, ans_maph)
@@ -736,7 +736,7 @@ class TestMap(unittest.TestCase):
                     num_ground_truth_dict=num_ground_truth_dict,
                     target_labels=self.target_labels,
                     matching_mode=MatchingMode.IOU3D,
-                    matching_thresholds=[0.5, 0.5, 0.5, 0.5],
+                    matching_threshold_list=[0.5, 0.5, 0.5, 0.5],
                 )
                 self.assertAlmostEqual(map.map, ans_map)
                 self.assertAlmostEqual(map.maph, ans_maph)
@@ -815,7 +815,7 @@ class TestMap(unittest.TestCase):
                     num_ground_truth_dict=num_ground_truth_dict,
                     target_labels=self.target_labels,
                     matching_mode=MatchingMode.IOU3D,
-                    matching_thresholds=[0.5, 0.5, 0.5, 0.5],
+                    matching_threshold_list=[0.5, 0.5, 0.5, 0.5],
                 )
                 self.assertAlmostEqual(map.map, ans_map)
                 self.assertAlmostEqual(map.maph, ans_maph)
@@ -873,7 +873,7 @@ class TestMap(unittest.TestCase):
             num_ground_truth_dict=num_ground_truth_dict,
             target_labels=self.target_labels,
             matching_mode=MatchingMode.IOU3D,
-            matching_thresholds=[0.2, 0.5, 0.5, 0.5],
+            matching_threshold_list=[0.2, 0.5, 0.5, 0.5],
         )
         self.assertAlmostEqual(map.map, ans_map)
         self.assertAlmostEqual(map.maph, ans_maph)
@@ -946,7 +946,7 @@ class TestMap(unittest.TestCase):
                     num_ground_truth_dict=num_ground_truth_dict,
                     target_labels=self.target_labels,
                     matching_mode=MatchingMode.PLANEDISTANCE,
-                    matching_thresholds=[1.0, 1.0, 1.0, 1.0],
+                    matching_threshold_list=[1.0, 1.0, 1.0, 1.0],
                 )
                 self.assertAlmostEqual(map.map, ans_map, msg=f"@{n+1}")
                 self.assertAlmostEqual(map.maph, ans_maph, msg=f"@{n+1}")
@@ -1024,7 +1024,7 @@ class TestMap(unittest.TestCase):
                     num_ground_truth_dict=num_ground_truth_dict,
                     target_labels=self.target_labels,
                     matching_mode=MatchingMode.PLANEDISTANCE,
-                    matching_thresholds=[1.0, 1.0, 1.0, 1.0],
+                    matching_threshold_list=[1.0, 1.0, 1.0, 1.0],
                 )
                 self.assertAlmostEqual(map.map, ans_map, msg=f"@{n+1}")
                 self.assertAlmostEqual(map.maph, ans_maph, msg=f"@{n+1}")
@@ -1104,7 +1104,7 @@ class TestMap(unittest.TestCase):
             num_ground_truth_dict=num_ground_truth_dict,
             target_labels=self.target_labels,
             matching_mode=MatchingMode.PLANEDISTANCE,
-            matching_thresholds=[1.0, 1.0, 1.0, 1.0],
+            matching_threshold_list=[1.0, 1.0, 1.0, 1.0],
         )
 
         self.assertAlmostEqual(map.map, ans_map)

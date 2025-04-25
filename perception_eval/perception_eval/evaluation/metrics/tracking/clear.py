@@ -77,7 +77,7 @@ class CLEAR(_TrackingMetricsBase):
         num_ground_truth: int,
         target_labels: List[LabelType],
         matching_mode: MatchingMode,
-        matching_thresholds: List[float],
+        matching_threshold_list: List[float],
         tp_metrics: TPMetrics = TPMetricsAp(),
         metrics_field: Optional[List[str]] = None,
     ) -> None:
@@ -85,7 +85,7 @@ class CLEAR(_TrackingMetricsBase):
             num_ground_truth=num_ground_truth,
             target_labels=target_labels,
             matching_mode=matching_mode,
-            matching_thresholds=matching_thresholds,
+            matching_threshold_list=matching_threshold_list,
             tp_metrics=tp_metrics,
             metrics_field=metrics_field,
         )
@@ -178,7 +178,7 @@ class CLEAR(_TrackingMetricsBase):
                 if cur_obj_result.ground_truth_object is not None
                 else cur_obj_result.estimated_object.semantic_label,
                 target_labels=self.target_labels,
-                threshold_list=self.matching_thresholds,
+                threshold_list=self.matching_threshold_list,
             )
             if matching_threshold_ is None:
                 continue

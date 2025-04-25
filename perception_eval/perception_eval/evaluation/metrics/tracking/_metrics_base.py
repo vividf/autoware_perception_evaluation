@@ -33,7 +33,7 @@ class _TrackingMetricsBase(ABC):
         num_ground_truth (int): Number of ground truths.
         target_labels (List[LabelType]): Target labels list.
         matching_mode (MatchingMode): MatchingMode instance.
-        matching_thresholds (List[float]): Thresholds list for matching.
+        matching_threshold_list (List[float]): Thresholds list for matching.
         metrics_field (Optional[List[str]]): Filed name of target metrics. If it is not specified, default supported metrics are used.
         support_metrics (List[str]): List of supported metrics names.
 
@@ -41,7 +41,7 @@ class _TrackingMetricsBase(ABC):
         num_ground_truth (int): Number of ground truths.
         target_labels (List[LabelType]): Target labels list.
         matching_mode (MatchingMode): MatchingMode instance.
-        matching_thresholds (List[float]): Thresholds list for matching.
+        matching_threshold_list (List[float]): Thresholds list for matching.
         tp_metrics (TPMetrics): TPMetrics instance.
         metrics_field (Optional[List[str]]: The list of target sub metrics.
     """
@@ -54,14 +54,14 @@ class _TrackingMetricsBase(ABC):
         num_ground_truth: int,
         target_labels: List[LabelType],
         matching_mode: MatchingMode,
-        matching_thresholds: List[float],
+        matching_threshold_list: List[float],
         tp_metrics: TPMetrics,
         metrics_field: Optional[List[str]],
     ) -> None:
         self._num_ground_truth: int = num_ground_truth
         self._target_labels: List[LabelType] = target_labels
         self._matching_mode: MatchingMode = matching_mode
-        self._matching_thresholds = matching_thresholds
+        self._matching_threshold_list = matching_threshold_list
         self._tp_metrics: TPMetrics = tp_metrics
 
         # Check if metrics field is supported.
@@ -119,8 +119,8 @@ class _TrackingMetricsBase(ABC):
         return self._matching_mode
 
     @property
-    def matching_thresholds(self) -> List[float]:
-        return self._matching_thresholds
+    def matching_threshold_list(self) -> List[float]:
+        return self._matching_threshold_list
 
     @property
     def tp_metrics(self) -> TPMetrics:

@@ -30,7 +30,7 @@ from perception_eval.evaluation.matching.objects_filter import divide_objects_to
 from perception_eval.evaluation.matching.objects_filter import filter_objects
 from perception_eval.evaluation.metrics.tracking.tracking_metrics_score import TrackingMetricsScore
 from perception_eval.evaluation.result.object_result import DynamicObjectWithPerceptionResult
-from perception_eval.evaluation.result.object_result import get_object_results
+from perception_eval.evaluation.result.object_result_matching import get_object_results
 from perception_eval.util.debug import get_objects_with_difference
 
 
@@ -197,7 +197,7 @@ class TestTrackingMetricsScore(unittest.TestCase):
                     num_ground_truth_dict=num_ground_truth_dict,
                     target_labels=self.target_labels,
                     matching_mode=MatchingMode.CENTERDISTANCE,
-                    matching_thresholds=[0.5, 0.5, 0.5, 0.5],
+                    matching_threshold_list=[0.5, 0.5, 0.5, 0.5],
                 )
                 mota, motp, id_switch = tracking_score._sum_clear()
                 self.assertAlmostEqual(mota, ans_mota, msg=f"[{n + 1}] MOTA: {mota} != {ans_mota}")
@@ -318,7 +318,7 @@ class TestTrackingMetricsScore(unittest.TestCase):
                     num_ground_truth_dict=num_ground_truth_dict,
                     target_labels=self.target_labels,
                     matching_mode=MatchingMode.CENTERDISTANCE,
-                    matching_thresholds=[0.5, 0.5, 0.5, 0.5],
+                    matching_threshold_list=[0.5, 0.5, 0.5, 0.5],
                 )
                 for clear_, ans_clear_ in zip(tracking_score.clears, ans_clears):
                     out_clear_ = AnswerCLEAR.from_clear(clear_)
@@ -433,7 +433,7 @@ class TestTrackingMetricsScore(unittest.TestCase):
                     num_ground_truth_dict=num_ground_truth_dict,
                     target_labels=self.target_labels,
                     matching_mode=MatchingMode.CENTERDISTANCE,
-                    matching_thresholds=[0.5, 0.5, 0.5, 0.5],
+                    matching_threshold_list=[0.5, 0.5, 0.5, 0.5],
                 )
 
                 # Check scores for each target label

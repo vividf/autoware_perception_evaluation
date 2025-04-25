@@ -33,7 +33,7 @@ from perception_eval.evaluation.metrics.detection.ap import Ap
 from perception_eval.evaluation.metrics.detection.tp_metrics import TPMetricsAp
 from perception_eval.evaluation.metrics.detection.tp_metrics import TPMetricsAph
 from perception_eval.evaluation.result.object_result import DynamicObjectWithPerceptionResult
-from perception_eval.evaluation.result.object_result import get_object_results
+from perception_eval.evaluation.result.object_result_matching import get_object_results
 from perception_eval.util.debug import get_objects_with_difference
 
 
@@ -250,7 +250,7 @@ class TestAp(unittest.TestCase):
                     num_ground_truth=num_ground_truth,
                     target_labels=self.target_labels,
                     matching_mode=MatchingMode.CENTERDISTANCE,
-                    matching_thresholds=[0.5],
+                    matching_threshold_list=[0.5],
                 )
 
                 aph: Ap = Ap(
@@ -259,7 +259,7 @@ class TestAp(unittest.TestCase):
                     num_ground_truth=num_ground_truth,
                     target_labels=self.target_labels,
                     matching_mode=MatchingMode.CENTERDISTANCE,
-                    matching_thresholds=[0.5],
+                    matching_threshold_list=[0.5],
                 )
                 out_ap: AnswerAP = AnswerAP.from_ap(ap)
                 out_aph: AnswerAP = AnswerAP.from_ap(aph)
@@ -520,7 +520,7 @@ class TestAp(unittest.TestCase):
                     num_ground_truth=num_ground_truth,
                     target_labels=self.target_labels,
                     matching_mode=MatchingMode.CENTERDISTANCE,
-                    matching_thresholds=[0.1],
+                    matching_threshold_list=[0.1],
                 )
                 aph: Ap = Ap(
                     tp_metrics=TPMetricsAph(),
@@ -528,7 +528,7 @@ class TestAp(unittest.TestCase):
                     num_ground_truth=num_ground_truth,
                     target_labels=self.target_labels,
                     matching_mode=MatchingMode.CENTERDISTANCE,
-                    matching_thresholds=[0.1],
+                    matching_threshold_list=[0.1],
                 )
                 out_ap: AnswerAP = AnswerAP.from_ap(ap)
                 out_aph: AnswerAP = AnswerAP.from_ap(aph)
@@ -577,7 +577,7 @@ class TestAp(unittest.TestCase):
             num_ground_truth=num_ground_truth,
             target_labels=[AutowareLabel.MOTORBIKE],
             matching_mode=MatchingMode.CENTERDISTANCE,
-            matching_thresholds=[0.1],
+            matching_threshold_list=[0.1],
         )
         aph: Ap = Ap(
             tp_metrics=TPMetricsAph(),
@@ -585,7 +585,7 @@ class TestAp(unittest.TestCase):
             num_ground_truth=num_ground_truth,
             target_labels=[AutowareLabel.MOTORBIKE],
             matching_mode=MatchingMode.CENTERDISTANCE,
-            matching_thresholds=[0.1],
+            matching_threshold_list=[0.1],
         )
 
         self.assertAlmostEqual(ap.ap, ans_ap)
@@ -694,7 +694,7 @@ class TestAp(unittest.TestCase):
                     num_ground_truth=num_ground_truth,
                     target_labels=self.target_labels,
                     matching_mode=MatchingMode.CENTERDISTANCEBEV,
-                    matching_thresholds=[0.5],
+                    matching_threshold_list=[0.5],
                 )
 
                 aph: Ap = Ap(
@@ -703,7 +703,7 @@ class TestAp(unittest.TestCase):
                     num_ground_truth=num_ground_truth,
                     target_labels=self.target_labels,
                     matching_mode=MatchingMode.CENTERDISTANCEBEV,
-                    matching_thresholds=[0.5],
+                    matching_threshold_list=[0.5],
                 )
                 out_ap: AnswerAP = AnswerAP.from_ap(ap)
                 out_aph: AnswerAP = AnswerAP.from_ap(aph)
@@ -964,7 +964,7 @@ class TestAp(unittest.TestCase):
                     num_ground_truth=num_ground_truth,
                     target_labels=self.target_labels,
                     matching_mode=MatchingMode.CENTERDISTANCEBEV,
-                    matching_thresholds=[0.1],
+                    matching_threshold_list=[0.1],
                 )
                 aph: Ap = Ap(
                     tp_metrics=TPMetricsAph(),
@@ -972,7 +972,7 @@ class TestAp(unittest.TestCase):
                     num_ground_truth=num_ground_truth,
                     target_labels=self.target_labels,
                     matching_mode=MatchingMode.CENTERDISTANCEBEV,
-                    matching_thresholds=[0.1],
+                    matching_threshold_list=[0.1],
                 )
                 out_ap: AnswerAP = AnswerAP.from_ap(ap)
                 out_aph: AnswerAP = AnswerAP.from_ap(aph)
@@ -1021,7 +1021,7 @@ class TestAp(unittest.TestCase):
             num_ground_truth=num_ground_truth,
             target_labels=[AutowareLabel.MOTORBIKE],
             matching_mode=MatchingMode.CENTERDISTANCEBEV,
-            matching_thresholds=[0.1],
+            matching_threshold_list=[0.1],
         )
         aph: Ap = Ap(
             tp_metrics=TPMetricsAph(),
@@ -1029,7 +1029,7 @@ class TestAp(unittest.TestCase):
             num_ground_truth=num_ground_truth,
             target_labels=[AutowareLabel.MOTORBIKE],
             matching_mode=MatchingMode.CENTERDISTANCEBEV,
-            matching_thresholds=[0.1],
+            matching_threshold_list=[0.1],
         )
 
         self.assertAlmostEqual(ap.ap, ans_ap)
@@ -1137,7 +1137,7 @@ class TestAp(unittest.TestCase):
                     num_ground_truth=num_ground_truth,
                     target_labels=self.target_labels,
                     matching_mode=MatchingMode.IOU2D,
-                    matching_thresholds=[0.7],
+                    matching_threshold_list=[0.7],
                 )
                 aph: Ap = Ap(
                     tp_metrics=TPMetricsAph(),
@@ -1145,7 +1145,7 @@ class TestAp(unittest.TestCase):
                     num_ground_truth=num_ground_truth,
                     target_labels=self.target_labels,
                     matching_mode=MatchingMode.IOU2D,
-                    matching_thresholds=[0.7],
+                    matching_threshold_list=[0.7],
                 )
                 out_ap: AnswerAP = AnswerAP.from_ap(ap)
                 out_aph: AnswerAP = AnswerAP.from_ap(aph)
@@ -1250,7 +1250,7 @@ class TestAp(unittest.TestCase):
                     num_ground_truth=num_ground_truth,
                     target_labels=self.target_labels,
                     matching_mode=MatchingMode.IOU2D,
-                    matching_thresholds=[0.8],
+                    matching_threshold_list=[0.8],
                 )
                 aph: Ap = Ap(
                     tp_metrics=TPMetricsAph(),
@@ -1258,7 +1258,7 @@ class TestAp(unittest.TestCase):
                     num_ground_truth=num_ground_truth,
                     target_labels=self.target_labels,
                     matching_mode=MatchingMode.IOU2D,
-                    matching_thresholds=[0.7],
+                    matching_threshold_list=[0.7],
                 )
                 self.assertAlmostEqual(ap.ap, ans_ap)
                 self.assertAlmostEqual(aph.ap, ans_aph)
@@ -1312,7 +1312,7 @@ class TestAp(unittest.TestCase):
             num_ground_truth=num_ground_truth,
             target_labels=self.target_labels,
             matching_mode=MatchingMode.IOU2D,
-            matching_thresholds=[0.4],
+            matching_threshold_list=[0.4],
         )
         aph: Ap = Ap(
             tp_metrics=TPMetricsAph(),
@@ -1320,7 +1320,7 @@ class TestAp(unittest.TestCase):
             num_ground_truth=num_ground_truth,
             target_labels=self.target_labels,
             matching_mode=MatchingMode.IOU2D,
-            matching_thresholds=[0.4],
+            matching_threshold_list=[0.4],
         )
 
         self.assertAlmostEqual(ap.ap, ans_ap)
@@ -1381,7 +1381,7 @@ class TestAp(unittest.TestCase):
                     num_ground_truth=num_ground_truth,
                     target_labels=self.target_labels,
                     matching_mode=MatchingMode.IOU3D,
-                    matching_thresholds=[0.6],
+                    matching_threshold_list=[0.6],
                 )
                 aph: Ap = Ap(
                     tp_metrics=TPMetricsAph(),
@@ -1389,7 +1389,7 @@ class TestAp(unittest.TestCase):
                     num_ground_truth=num_ground_truth,
                     target_labels=self.target_labels,
                     matching_mode=MatchingMode.IOU3D,
-                    matching_thresholds=[0.6],
+                    matching_threshold_list=[0.6],
                 )
 
                 self.assertAlmostEqual(ap.ap, ans_ap)
@@ -1464,7 +1464,7 @@ class TestAp(unittest.TestCase):
                     num_ground_truth=num_ground_truth,
                     target_labels=self.target_labels,
                     matching_mode=MatchingMode.IOU3D,
-                    matching_thresholds=[0.8],
+                    matching_threshold_list=[0.8],
                 )
                 aph: Ap = Ap(
                     tp_metrics=TPMetricsAph(),
@@ -1472,7 +1472,7 @@ class TestAp(unittest.TestCase):
                     num_ground_truth=num_ground_truth,
                     target_labels=self.target_labels,
                     matching_mode=MatchingMode.IOU3D,
-                    matching_thresholds=[0.8],
+                    matching_threshold_list=[0.8],
                 )
 
                 self.assertAlmostEqual(ap.ap, ans_ap)
@@ -1526,7 +1526,7 @@ class TestAp(unittest.TestCase):
             num_ground_truth=num_ground_truth,
             target_labels=self.target_labels,
             matching_mode=MatchingMode.IOU3D,
-            matching_thresholds=[0.3],
+            matching_threshold_list=[0.3],
         )
         aph: Ap = Ap(
             tp_metrics=TPMetricsAph(),
@@ -1534,7 +1534,7 @@ class TestAp(unittest.TestCase):
             num_ground_truth=num_ground_truth,
             target_labels=self.target_labels,
             matching_mode=MatchingMode.IOU3D,
-            matching_thresholds=[0.2],
+            matching_threshold_list=[0.2],
         )
 
         self.assertAlmostEqual(ap.ap, ans_ap)
@@ -1594,7 +1594,7 @@ class TestAp(unittest.TestCase):
                     num_ground_truth=num_ground_truth,
                     target_labels=self.target_labels,
                     matching_mode=MatchingMode.PLANEDISTANCE,
-                    matching_thresholds=[0.1],
+                    matching_threshold_list=[0.1],
                 )
                 aph: Ap = Ap(
                     tp_metrics=TPMetricsAph(),
@@ -1602,7 +1602,7 @@ class TestAp(unittest.TestCase):
                     num_ground_truth=num_ground_truth,
                     target_labels=self.target_labels,
                     matching_mode=MatchingMode.PLANEDISTANCE,
-                    matching_thresholds=[1.0],
+                    matching_threshold_list=[1.0],
                 )
 
                 self.assertAlmostEqual(ap.ap, ans_ap)
@@ -1673,7 +1673,7 @@ class TestAp(unittest.TestCase):
                     num_ground_truth=num_ground_truth,
                     target_labels=self.target_labels,
                     matching_mode=MatchingMode.PLANEDISTANCE,
-                    matching_thresholds=[1.5],
+                    matching_threshold_list=[1.5],
                 )
                 aph: Ap = Ap(
                     tp_metrics=TPMetricsAph(),
@@ -1681,7 +1681,7 @@ class TestAp(unittest.TestCase):
                     num_ground_truth=num_ground_truth,
                     target_labels=self.target_labels,
                     matching_mode=MatchingMode.PLANEDISTANCE,
-                    matching_thresholds=[1.5],
+                    matching_threshold_list=[1.5],
                 )
 
                 self.assertAlmostEqual(ap.ap, ans_ap)
@@ -1738,7 +1738,7 @@ class TestAp(unittest.TestCase):
             num_ground_truth=num_ground_truth,
             target_labels=self.target_labels,
             matching_mode=MatchingMode.PLANEDISTANCE,
-            matching_thresholds=[1.0],
+            matching_threshold_list=[1.0],
         )
         aph_tp: Ap = Ap(
             tp_metrics=TPMetricsAph(),
@@ -1746,7 +1746,7 @@ class TestAp(unittest.TestCase):
             num_ground_truth=num_ground_truth,
             target_labels=self.target_labels,
             matching_mode=MatchingMode.PLANEDISTANCE,
-            matching_thresholds=[1.0],
+            matching_threshold_list=[1.0],
         )
         ap_tn: Ap = Ap(
             tp_metrics=TPMetricsAp(),
@@ -1754,7 +1754,7 @@ class TestAp(unittest.TestCase):
             num_ground_truth=num_ground_truth,
             target_labels=self.target_labels,
             matching_mode=MatchingMode.PLANEDISTANCE,
-            matching_thresholds=[0.2],
+            matching_threshold_list=[0.2],
         )
         aph_tn: Ap = Ap(
             tp_metrics=TPMetricsAph(),
@@ -1762,7 +1762,7 @@ class TestAp(unittest.TestCase):
             num_ground_truth=num_ground_truth,
             target_labels=self.target_labels,
             matching_mode=MatchingMode.PLANEDISTANCE,
-            matching_thresholds=[0.2],
+            matching_threshold_list=[0.2],
         )
         self.assertAlmostEqual(ap_tp.ap, ans_ap_tp)
         self.assertAlmostEqual(aph_tp.ap, ans_aph_tp)

@@ -119,7 +119,7 @@ class PerceptionLSimMoc:
         else:
             raise ValueError(f"Unexpected label prefix: {self.label_prefix}")
 
-        matching_thresholds = None if self.evaluation_task == "classification2d" else [0.5, 0.5, 0.5, 0.5]
+        matching_threshold_list = None if self.evaluation_task == "classification2d" else [0.5, 0.5, 0.5, 0.5]
         # 距離などでUC評価objectを選別するためのインターフェイス（PerceptionEvaluationManager初期化時にConfigを設定せず、関数受け渡しにすることで動的に変更可能なInterface）
         # どれを注目物体とするかのparam
         critical_object_filter_config: CriticalObjectFilterConfig = CriticalObjectFilterConfig(
@@ -131,7 +131,7 @@ class PerceptionLSimMoc:
         frame_pass_fail_config: PerceptionPassFailConfig = PerceptionPassFailConfig(
             evaluator_config=self.evaluator.evaluator_config,
             target_labels=target_labels,
-            matching_thresholds=matching_thresholds,
+            matching_threshold_list=matching_threshold_list,
         )
 
         frame_result = self.evaluator.add_frame_result(
