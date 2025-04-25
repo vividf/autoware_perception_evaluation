@@ -46,7 +46,7 @@ class HOTA(_TrackingMetricsBase):
         num_ground_truth: int,
         target_labels: List[LabelType],
         matching_mode: MatchingMode,
-        matching_threshold_list: List[float],
+        matching_thresholds: List[float],
         tp_metrics: TPMetrics = TPMetricsAp(),
         metrics_field: Optional[List[str]] = None,
     ) -> None:
@@ -69,7 +69,7 @@ class HOTA(_TrackingMetricsBase):
             num_ground_truth=num_ground_truth,
             target_labels=target_labels,
             matching_mode=matching_mode,
-            matching_threshold_list=matching_threshold_list,
+            matching_thresholds=matching_thresholds,
             tp_metrics=tp_metrics,
             metrics_field=metrics_field,
         )

@@ -478,7 +478,7 @@ class TestCLEAR(unittest.TestCase):
                     num_ground_truth=num_ground_truth,
                     target_labels=[target_label],
                     matching_mode=MatchingMode.CENTERDISTANCE,
-                    matching_threshold_list=[0.5],
+                    matching_thresholds=[0.5],
                 )
                 out_clear: AnswerCLEAR = AnswerCLEAR.from_clear(clear_)
                 self.assertEqual(

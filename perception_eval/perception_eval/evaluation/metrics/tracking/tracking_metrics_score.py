@@ -27,7 +27,7 @@ from .clear import CLEAR
 class TrackingMetricsScore:
     """Metrics score class for tracking evaluation.
 
-    Length of input `target_labels` and `matching_threshold_list` must be same.
+    Length of input `target_labels` and `matching_thresholds` must be same.
 
     Attributes:
         target_labels: (List[LabelType]): Target labels list.
@@ -40,7 +40,7 @@ class TrackingMetricsScore:
         num_ground_truth (int): Number of ground truths.
         target_labels (List[LabelType]): Target labels list.
         matching_mode (MatchingMode): MatchingMode instance.
-        matching_threshold_list (List[float]): Matching thresholds list.
+        matching_thresholds (List[float]): Matching thresholds list.
     """
 
     def __init__(
@@ -49,16 +49,16 @@ class TrackingMetricsScore:
         num_ground_truth_dict: Dict[LabelType, int],
         target_labels: List[LabelType],
         matching_mode: MatchingMode,
-        matching_threshold_list: List[float],
+        matching_thresholds: List[float],
     ) -> None:
-        assert len(target_labels) == len(matching_threshold_list)
+        assert len(target_labels) == len(matching_thresholds)
         self.target_labels: List[LabelType] = target_labels
         self.matching_mode: MatchingMode = matching_mode
 
         # CLEAR results for each class
         self.clears: List[CLEAR] = []
         # Calculate score for each target labels
-        for target_label, matching_threshold in zip(target_labels, matching_threshold_list):
+        for target_label, matching_threshold in zip(target_labels, matching_thresholds):
             object_results = object_results_dict[target_label]
             num_ground_truth = num_ground_truth_dict[target_label]
             clear_: CLEAR = CLEAR(
@@ -66,7 +66,7 @@ class TrackingMetricsScore:
                 num_ground_truth=num_ground_truth,
                 target_labels=[target_label],
                 matching_mode=matching_mode,
-                matching_threshold_list=[matching_threshold],
+                matching_thresholds=[matching_threshold],
             )
             self.clears.append(clear_)
 
@@ -117,7 +117,7 @@ class TrackingMetricsScore:
         str_ += "|      Label |"
         # CLEAR
         for clear in self.clears:
-            str_ += f" {clear.target_labels[0]}({clear.matching_threshold_list[0]}) | "
+            str_ += f" {clear.target_labels[0]}({clear.matching_thresholds[0]}) | "
         str_ += "\n"
         str_ += "| :--------: |"
         for _ in self.clears:

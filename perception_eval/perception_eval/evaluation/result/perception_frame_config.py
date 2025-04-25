@@ -198,14 +198,14 @@ class PerceptionPassFailConfig:
         self,
         evaluator_config: PerceptionEvaluationConfig,
         target_labels: Optional[List[str]],
-        matching_threshold_list: Optional[List[float]] = None,
+        matching_thresholds: Optional[List[float]] = None,
         confidence_threshold_list: Optional[List[float]] = None,
     ) -> None:
         """[summary]
         Args:
             evaluator_config (PerceptionEvaluationConfig): Evaluation config
             target_labels (List[str]): Target list. If None or empty list is specified, all labels will be evaluated.
-            matching_threshold_list (List[float]): The threshold list for Pass/Fail.
+            matching_thresholds (List[float]): The threshold list for Pass/Fail.
                 For 2D evaluation, IOU2D, for 3D evaluation, PLANEDISTANCE will be used. Defaults to None.
             confidence_threshold_list (Optional[List[float]]): The list of confidence threshold. Defaults to None.
         """
@@ -218,10 +218,10 @@ class PerceptionPassFailConfig:
         )
 
         num_elements: int = len(self.target_labels)
-        if matching_threshold_list is None:
-            self.matching_threshold_list = None
+        if matching_thresholds is None:
+            self.matching_thresholds = None
         else:
-            self.matching_threshold_list: List[float] = check_thresholds(matching_threshold_list, num_elements)
+            self.matching_thresholds: List[float] = check_thresholds(matching_thresholds, num_elements)
         if confidence_threshold_list is None:
             self.confidence_threshold_list = None
         else:
@@ -231,7 +231,7 @@ class PerceptionPassFailConfig:
         """Serialization and deserialization of the object with pickling."""
         return (
             self.__class__,
-            (self.evaluator_config, self.labels, self.matching_threshold_list, self.confidence_threshold_list),
+            (self.evaluator_config, self.labels, self.matching_thresholds, self.confidence_threshold_list),
         )
 
     def serialization(self) -> Dict[str, Any]:
@@ -239,7 +239,7 @@ class PerceptionPassFailConfig:
         return {
             "evaluator_config": self.evaluator_config.serialization(),
             "target_labels": self.labels,
-            "matching_threshold_list": self.matching_threshold_list,
+            "matching_thresholds": self.matching_thresholds,
             "confidence_threshold_list": self.confidence_threshold_list,
         }
 
@@ -249,7 +249,7 @@ class PerceptionPassFailConfig:
         return cls(
             evaluator_config=PerceptionEvaluationConfig.deserialization(data["evaluator_config"]),
             target_labels=data["target_labels"],
-            matching_threshold_list=data["matching_threshold_list"],
+            matching_thresholds=data["matching_thresholds"],
             confidence_threshold_list=data["confidence_threshold_list"],
         )
 

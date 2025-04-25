@@ -56,7 +56,7 @@ class TestObjectsFilter(unittest.TestCase):
         self.max_pos_distance_list: List[float] = [1.5, 1.5, 1.5, 1.5]
         self.min_pos_distance_list: List[float] = [0.3, 0.3, 0.3, 0.3]
         self.matching_mode: MatchingMode = MatchingMode.CENTERDISTANCE
-        self.matching_threshold_list: List[float] = [2.0, 2.0, 2.0, 2.0]
+        self.matching_thresholds: List[float] = [2.0, 2.0, 2.0, 2.0]
         self.confidence_threshold_list: List[float] = [0.5, 0.5, 0.5, 0.5]
         self.min_point_numbers: List[int] = [0, 1, 10, 0]
 
@@ -274,7 +274,7 @@ class TestObjectsFilter(unittest.TestCase):
                     object_results,
                     self.target_labels,
                     self.matching_mode,
-                    self.matching_threshold_list,
+                    self.matching_thresholds,
                 )
                 # TP
                 self.assertEqual(
@@ -354,7 +354,7 @@ class TestObjectsFilter(unittest.TestCase):
                     object_results,
                     self.target_labels,
                     self.matching_mode,
-                    self.matching_threshold_list,
+                    self.matching_thresholds,
                 )
                 self.assertEqual(
                     tn_objects,
@@ -481,7 +481,7 @@ class TestObjectsFilter(unittest.TestCase):
                     object_results,
                     self.target_labels,
                     self.matching_mode,
-                    self.matching_threshold_list,
+                    self.matching_thresholds,
                     self.confidence_threshold_list,
                 )
                 # TP
@@ -572,7 +572,7 @@ class TestObjectsFilter(unittest.TestCase):
                     object_results,
                     self.target_labels,
                     self.matching_mode,
-                    self.matching_threshold_list,
+                    self.matching_thresholds,
                     self.confidence_threshold_list,
                 )
 
@@ -651,7 +651,7 @@ class TestObjectsFilter(unittest.TestCase):
                     object_results,
                     self.target_labels,
                     self.matching_mode,
-                    self.matching_threshold_list,
+                    self.matching_thresholds,
                     self.confidence_threshold_list,
                 )
                 fn_objects = get_fn_objects(

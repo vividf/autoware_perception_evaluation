@@ -118,7 +118,7 @@
                       'fn_objects': ' --- length of element 17 ---,',
                       'fp_object_results': ' --- length of element 17 ---,',
                       'frame_pass_fail_config': {'confidence_threshold_list': None,
-                                                 'matching_threshold_list': ' --- length of element 4 ---,',
+                                                 'matching_thresholds': ' --- length of element 4 ---,',
                                                  'target_labels': ' --- length of element 4 ---,'},
                       'tp_object_results': ' --- length of element 22 ---,'},
  'target_labels': ' --- length of element 4 ---,',
@@ -156,7 +156,7 @@ object_results: List[DynamicObjectWithPerceptionResult] = get_object_results(est
   | `ground_truth_object` |   `Optional[ObjectType]`    | GT オブジェクト                                                  |
   | `is_label_correct`    |           `bool`            | 推定オブジェクトと GT オブジェクトのラベルが同一かどうかのフラグ |
   | `center_distance`     |  `CenterDistanceMatching`   | 中心間距離                                                       |
-  | `center_distance_bev` | `CenterDistanceBEVMatching` | 中心のBEV距離                                                    |
+  | `center_distance_bev` | `CenterDistanceBEVMatching` | 中心の BEV 距離                                                  |
   | `plane_distance`      |   `PlaneDistanceMatching`   | 面距離                                                           |
   | `iou_2d`              |       `IOU2dMatching`       | 2D の IOU (3D オブジェクトの場合は BEV)                          |
   | `iou_3d`              |       `IOU3dMatching`       | 3D の IOU                                                        |

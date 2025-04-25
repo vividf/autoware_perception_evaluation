@@ -162,7 +162,7 @@ class MetricsScore:
         for (matching_mode, threshold), label_results in results_by_match_config.items():
             target_labels = list(label_results.keys())
             num_gt_dict = {label: num_ground_truth.get(label, 0) for label in target_labels}
-            threshold_list = [threshold] * len(target_labels)
+            matching_thresholds = [threshold] * len(target_labels)
 
             # TODO(vividf): Rename variable to avoid shadowing Python built-in keywords like 'map'
             self.maps.append(
@@ -171,7 +171,7 @@ class MetricsScore:
                     num_ground_truth_dict=num_gt_dict,
                     target_labels=target_labels,
                     matching_mode=matching_mode,
-                    matching_threshold_list=threshold_list,
+                    matching_thresholds=matching_thresholds,
                     is_detection_2d=self.evaluation_task.is_2d(),
                 )
             )
@@ -200,7 +200,7 @@ class MetricsScore:
                 num_ground_truth_dict=num_ground_truth,
                 target_labels=self.tracking_config.target_labels,
                 matching_mode=MatchingMode.CENTERDISTANCE,
-                matching_threshold_list=distance_threshold_,
+                matching_thresholds=distance_threshold_,
             )
             self.tracking_scores.append(tracking_score_)
         for iou_threshold_2d_ in self.tracking_config.iou_2d_thresholds:
@@ -209,7 +209,7 @@ class MetricsScore:
                 num_ground_truth_dict=num_ground_truth,
                 target_labels=self.tracking_config.target_labels,
                 matching_mode=MatchingMode.IOU2D,
-                matching_threshold_list=iou_threshold_2d_,
+                matching_thresholds=iou_threshold_2d_,
             )
             self.tracking_scores.append(tracking_score_)
 
@@ -220,7 +220,7 @@ class MetricsScore:
                     num_ground_truth_dict=num_ground_truth,
                     target_labels=self.tracking_config.target_labels,
                     matching_mode=MatchingMode.CENTERDISTANCEBEV,
-                    matching_threshold_list=distance_bev_threshold_,
+                    matching_thresholds=distance_bev_threshold_,
                 )
                 self.tracking_scores.append(tracking_score_)
             for iou_threshold_3d_ in self.tracking_config.iou_3d_thresholds:
@@ -229,7 +229,7 @@ class MetricsScore:
                     num_ground_truth_dict=num_ground_truth,
                     target_labels=self.tracking_config.target_labels,
                     matching_mode=MatchingMode.IOU3D,
-                    matching_threshold_list=iou_threshold_3d_,
+                    matching_thresholds=iou_threshold_3d_,
                 )
                 self.tracking_scores.append(tracking_score_)
             for plane_distance_threshold_ in self.tracking_config.plane_distance_thresholds:
@@ -238,7 +238,7 @@ class MetricsScore:
                     num_ground_truth_dict=num_ground_truth,
                     target_labels=self.tracking_config.target_labels,
                     matching_mode=MatchingMode.PLANEDISTANCE,
-                    matching_threshold_list=plane_distance_threshold_,
+                    matching_thresholds=plane_distance_threshold_,
                 )
                 self.tracking_scores.append(tracking_score_)
 

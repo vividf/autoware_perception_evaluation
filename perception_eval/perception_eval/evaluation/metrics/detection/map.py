@@ -36,7 +36,7 @@ class Map:
         target_labels (List[LabelType]): Target labels to evaluate mAP
         matching_mode (MatchingMode): Matching mode like distance between the center of
             the object, 3d IoU.
-        matching_threshold_list (List[float]):
+        matching_thresholds (List[float]):
             The matching threshold to evaluate. Defaults to None.
             For example, if matching_mode = IOU3d and matching_threshold = 0.5,
             and IoU of the object is higher than "matching_threshold",
@@ -49,18 +49,18 @@ class Map:
         num_ground_truth_dict: Dict[LabelType, int],
         target_labels: List[LabelType],
         matching_mode: MatchingMode,
-        matching_threshold_list: List[List[float]],
+        matching_thresholds: List[float],
         is_detection_2d: bool = False,
     ) -> None:
         self.target_labels: List[LabelType] = target_labels
         self.matching_mode: MatchingMode = matching_mode
-        self.matching_threshold_list: List[float] = matching_threshold_list
+        self.matching_thresholds: List[float] = matching_thresholds
         self.is_detection_2d: bool = is_detection_2d
 
         # calculate AP & APH
         self.aps: List[Ap] = []
         self.aphs: List[Ap] = []
-        for target_label, matching_threshold in zip(target_labels, matching_threshold_list):
+        for target_label, matching_threshold in zip(target_labels, matching_thresholds):
             object_results = object_results_dict[target_label]
             num_ground_truth = num_ground_truth_dict[target_label]
             ap_ = Ap(

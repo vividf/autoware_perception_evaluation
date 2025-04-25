@@ -88,7 +88,7 @@ class PassFailResult:
             object_results,
             self.frame_pass_fail_config.target_labels,
             MatchingMode.IOU2D if self.frame_pass_fail_config.evaluation_task.is_2d() else MatchingMode.PLANEDISTANCE,
-            self.frame_pass_fail_config.matching_threshold_list,
+            self.frame_pass_fail_config.matching_thresholds,
         )
 
     def get_num_success(self) -> int:
@@ -140,7 +140,7 @@ class PassFailResult:
                 if self.frame_pass_fail_config.evaluation_task.is_2d()
                 else MatchingMode.PLANEDISTANCE
             ),
-            matching_threshold_list=self.frame_pass_fail_config.matching_threshold_list,
+            matching_thresholds=self.frame_pass_fail_config.matching_thresholds,
         )
 
         return tp_object_results, fp_object_results

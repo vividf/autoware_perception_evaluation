@@ -52,7 +52,7 @@ json_result = json.dump(dict_result)
   | Arguments                |            type             | Description                                                      |
   | :----------------------- | :-------------------------: | :--------------------------------------------------------------- |
   | `dataset_path`           |         `List[str]`         | データセットパス(List[]で指定するが複数データ対応については TBD) |
-  | `frame_id`               | `Union[str, Sequence[str]]` | オブジェクトが従う FrameIDの文字列.                              |
+  | `frame_id`               | `Union[str, Sequence[str]]` | オブジェクトが従う FrameID の文字列.                             |
   | `result_root_directory`  |            `str`            | 評価結果，ログ，可視化結果等を保存するディレクトリのパス         |
   | `evaluation_config_dict` |      `Dict[str, Any]`       | 評価パラメータ                                                   |
   | `load_raw_data`          |           `bool`            | データセットから点群/画像データをロードするか                    |
@@ -91,19 +91,19 @@ json_result = json.dump(dict_result)
 
   - **3. ラベル設定用のパラメータ**
 
-    | Arguments                |  type  | Mandatory | Description                                                         |
-    | :----------------------- | :----: | :-------: | :------------------------------------------------------------------ |
-    | `label_prefix`           | `str`  |    Yes    | 使用ラベル種類("autoware", "traffic_light")                         |
-    | `merge_similar_labels`   | `bool` |    No     | 類似ラベルをマージするか(Default: `False`)                          |
-    | `allow_matching_unknown` | `bool` |    No     | unknownラベル予測と正解物体とのマージを許容するか(Default: `False`) |
-    | `count_label_number`     | `bool` |    No     | ロードされた各ラベルの数を数えるか(Default: `True`)                 |
+    | Arguments                |  type  | Mandatory | Description                                                          |
+    | :----------------------- | :----: | :-------: | :------------------------------------------------------------------- |
+    | `label_prefix`           | `str`  |    Yes    | 使用ラベル種類("autoware", "traffic_light")                          |
+    | `merge_similar_labels`   | `bool` |    No     | 類似ラベルをマージするか(Default: `False`)                           |
+    | `allow_matching_unknown` | `bool` |    No     | unknown ラベル予測と正解物体とのマージを許容するか(Default: `False`) |
+    | `count_label_number`     | `bool` |    No     | ロードされた各ラベルの数を数えるか(Default: `True`)                  |
 
   - **2. メトリクス評価時の `DynamicObjectWithPerceptionResult`の TP/FP/FN 判定用の閾値**
 
     | Arguments                        |     type      | Mandatory | Description                          |
     | :------------------------------- | :-----------: | :-------: | :----------------------------------- |
     | `center_distance_thresholds`     | `List[float]` |    Yes    | 中心間距離マッチング時の閾値         |
-    | `center_distance_bev_thresholds` | `List[float]` |    Yes    | 中心のBEV距離マッチング時の閾値      |
+    | `center_distance_bev_thresholds` | `List[float]` |    Yes    | 中心の BEV 距離マッチング時の閾値    |
     | `plane_distance_thresholds`      | `List[float]` | Yes (3D)  | 平面距離マッチング時の閾値 (3D のみ) |
     | `iou_2d_thresholds`              | `List[float]` |    Yes    | BEV IoU 　マッチング時の閾値         |
     | `iou_3d_thresholds`              | `List[float]` | Yes (3D)  | 3D IoU マッチング時の閾値 (3D のみ)  |
@@ -283,7 +283,7 @@ json_result = json.dump(dict_result)
 | :-------------------------- | :--------------------------: | :-------: | :----------------------------------------------------- |
 | `evaluator_config`          | `PerceptionEvaluationConfig` |    Yes    | `PerceptionEvaluationManager`の持つ config             |
 | `target_labels`             |         `List[str]`          |    No     | 評価対象ラベル名                                       |
-| `matching_threshold_list`   |        `List[float]`         |    No     | マッチング閾値．3D の場合は平面距離，2D の場合は IOU． |
+| `matching_thresholds`       |        `List[float]`         |    No     | マッチング閾値．3D の場合は平面距離，2D の場合は IOU． |
 | `confidence_threshold_list` |        `List[float]`         |    No     | 評価対象の estimated object の confidence の閾値       |
 
 ### 評価実行

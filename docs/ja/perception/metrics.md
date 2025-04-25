@@ -108,7 +108,7 @@
            'matching_average': 2.3086792761230375,
            'matching_mode': 'MatchingMode.CENTERDISTANCE',
            'matching_standard_deviation': 1.7793252530202338e-15,
-           'matching_threshold_list': [1.0],
+           'matching_thresholds': [1.0],
            'num_ground_truth': 3770,
            'objects_results_num': 3768,
            'target_labels': ['AutowareLabel.CAR'],
@@ -119,7 +119,7 @@
            'matching_average': 2.291362716605052,
            'matching_mode': 'MatchingMode.CENTERDISTANCE',
            'matching_standard_deviation': 0.828691650821576,
-           'matching_threshold_list': [1.0],
+           'matching_thresholds': [1.0],
            'num_ground_truth': 1319,
            'objects_results_num': 1186,
            'target_labels': ['AutowareLabel.BICYCLE'],
@@ -130,7 +130,7 @@
            'matching_average': 2.7900883035521864,
            'matching_mode': 'MatchingMode.CENTERDISTANCE',
            'matching_standard_deviation': 3.6498079706351123,
-           'matching_threshold_list': [1.0],
+           'matching_thresholds': [1.0],
            'num_ground_truth': 7657,
            'objects_results_num': 7583,
            'target_labels': ['AutowareLabel.PEDESTRIAN'],
@@ -141,7 +141,7 @@
            'matching_average': 2.308679276123039,
            'matching_mode': 'MatchingMode.CENTERDISTANCE',
            'matching_standard_deviation': 1.8215173398221747e-15,
-           'matching_threshold_list': [1.0],
+           'matching_thresholds': [1.0],
            'num_ground_truth': 335,
            'objects_results_num': 335,
            'target_labels': ['AutowareLabel.MOTORBIKE'],
@@ -152,7 +152,7 @@
           'matching_average': 2.3086792761230375,
           'matching_mode': 'MatchingMode.CENTERDISTANCE',
           'matching_standard_deviation': 1.7793252530202338e-15,
-          'matching_threshold_list': [1.0],
+          'matching_thresholds': [1.0],
           'num_ground_truth': 3770,
           'objects_results_num': 3768,
           'target_labels': ['AutowareLabel.CAR'],
@@ -163,7 +163,7 @@
           'matching_average': 2.291362716605052,
           'matching_mode': 'MatchingMode.CENTERDISTANCE',
           'matching_standard_deviation': 0.828691650821576,
-          'matching_threshold_list': [1.0],
+          'matching_thresholds': [1.0],
           'num_ground_truth': 1319,
           'objects_results_num': 1186,
           'target_labels': ['AutowareLabel.BICYCLE'],
@@ -174,7 +174,7 @@
           'matching_average': 2.7900883035521864,
           'matching_mode': 'MatchingMode.CENTERDISTANCE',
           'matching_standard_deviation': 3.6498079706351123,
-          'matching_threshold_list': [1.0],
+          'matching_thresholds': [1.0],
           'num_ground_truth': 7657,
           'objects_results_num': 7583,
           'target_labels': ['AutowareLabel.PEDESTRIAN'],
@@ -185,7 +185,7 @@
           'matching_average': 2.308679276123039,
           'matching_mode': 'MatchingMode.CENTERDISTANCE',
           'matching_standard_deviation': 1.8215173398221747e-15,
-          'matching_threshold_list': [1.0],
+          'matching_thresholds': [1.0],
           'num_ground_truth': 335,
           'objects_results_num': 335,
           'target_labels': ['AutowareLabel.MOTORBIKE'],
@@ -194,7 +194,7 @@
  'map': 0.003050265738901668,
  'maph': 0.0025863080046378386,
  'matching_mode': 'MatchingMode.CENTERDISTANCE',
- 'matching_threshold_list': [1.0, 1.0, 1.0, 1.0],
+ 'matching_thresholds': [1.0, 1.0, 1.0, 1.0],
  'target_labels': ['AutowareLabel.CAR', 'AutowareLabel.BICYCLE', 'AutowareLabel.PEDESTRIAN', 'AutowareLabel.MOTORBIKE']}
 ```
 
@@ -262,8 +262,8 @@
 
 - オブジェクト同士のマッチングの条件は以下．デフォルトで Center Distance 3D がマッチング方式として使用される．
 
-1. 最短距離の 同一クラスのGT と予測オブジェクトが優先的にマッチング
-2. クラスに関係なく最短距離のGTと予測オブジェクトをマッチング
+1. 最短距離の 同一クラスの GT と予測オブジェクトが優先的にマッチング
+2. クラスに関係なく最短距離の GT と予測オブジェクトをマッチング
 
 <img src="../../fig/perception/object_matching1.svg">
 
