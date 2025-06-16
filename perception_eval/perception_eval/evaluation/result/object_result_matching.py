@@ -96,6 +96,11 @@ class NuscenesObjectMatcher:
         self.matching_config_map = self._build_matching_config_map()
 
         # TODO(vividf): handle different label policy in the future
+        # if matching_label_policy is not MatchingLabelPolicy.DEFAULT:
+        #     raise ValueError(
+        #         f"NuscenesObjectMatcher only support MatchingLabelPolicy.DEFAULT, but got: {matching_label_policy}"
+        #     )
+
         if matching_label_policy is not MatchingLabelPolicy.DEFAULT:
             raise ValueError(
                 f"NuscenesObjectMatcher only support MatchingLabelPolicy.DEFAULT, but got: {matching_label_policy}"
@@ -150,9 +155,12 @@ class NuscenesObjectMatcher:
                   ...
                 }
         """
-        results: Dict[
-            MatchingMode, Dict[LabelType, Dict[float, List[DynamicObjectWithPerceptionResult]]]
-        ] = defaultdict(lambda: defaultdict(lambda: defaultdict(list)))
+        # results: Dict[
+        #     MatchingMode, Dict[LabelType, Dict[float, List[DynamicObjectWithPerceptionResult]]]
+        # ] = defaultdict(lambda: defaultdict(lambda: defaultdict(list)))
+
+        import functools        
+        results = defaultdict(functools.partial(defaultdict, functools.partial(defaultdict, list)))
 
         # All FN cases
         if not estimated_objects:
