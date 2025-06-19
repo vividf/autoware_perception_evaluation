@@ -131,17 +131,19 @@ class Map:
 
             print(f"\n[Result #{i}]")
             print("Estimated:")
+            print(f"  unix_time       : {est.unix_time}")
             print(f"  Frame ID       : {est.frame_id}")
             print(f"  Position       : {est.state.position}")
             print(f"  Orientation    : {est.state.orientation}")
-            print(f"  Semantic Label : {est.semantic_label}")
+            print(f"  Semantic Label : {est.semantic_label.label}")
 
             if gt is not None:
                 print("Ground Truth:")
+                print(f"  unix_time       : {est.unix_time}")
                 print(f"  Frame ID       : {gt.frame_id}")
                 print(f"  Position       : {gt.state.position}")
                 print(f"  Orientation    : {gt.state.orientation}")
-                print(f"  Semantic Label : {gt.semantic_label}")
+                print(f"  Semantic Label : {gt.semantic_label.label}")
             else:
                 print("Ground Truth: None (FP)")
 

@@ -254,6 +254,7 @@ class NuscenesObjectMatcher:
                 )
 
             # Add unmatched estimated objects as false positives if applicable
+            print("FP validation mode:", self.evaluation_task.is_fp_validation())
             if self.evaluation_task is not None and self.evaluation_task.is_fp_validation():
                 continue
 
