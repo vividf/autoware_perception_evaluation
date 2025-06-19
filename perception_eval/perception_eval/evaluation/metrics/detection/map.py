@@ -87,6 +87,10 @@ class Map:
             aph_per_threshold = []
 
             for threshold, object_results in object_results_dict[label].items():
+                print("MAP: target label: ", label, " threshold: ", threshold)
+                print("object_results size: ", len(object_results))
+                self.print_object_result_summary(object_results)
+
                 num_ground_truth = num_ground_truth_dict[label]
                 ap = Ap(
                     tp_metrics=TPMetricsAp(),
@@ -118,6 +122,30 @@ class Map:
 
         self.map: float = self._mean(list(self.label_mean_to_ap.values()))
         self.maph: float = self._mean(list(self.label_mean_to_aph.values())) if not self.is_detection_2d else None
+
+
+    def print_object_result_summary(self, object_results: List[DynamicObjectWithPerceptionResult]) -> None:
+        for i, result in enumerate(object_results):
+            est = result.estimated_object
+            gt = result.ground_truth_object
+
+            print(f"\n[Result #{i}]")
+            print("Estimated:")
+            print(f"  Frame ID       : {est.frame_id}")
+            print(f"  Position       : {est.state.position}")
+            print(f"  Orientation    : {est.state.orientation}")
+            print(f"  Semantic Label : {est.semantic_label}")
+
+            if gt is not None:
+                print("Ground Truth:")
+                print(f"  Frame ID       : {gt.frame_id}")
+                print(f"  Position       : {gt.state.position}")
+                print(f"  Orientation    : {gt.state.orientation}")
+                print(f"  Semantic Label : {gt.semantic_label}")
+            else:
+                print("Ground Truth: None (FP)")
+
+
 
     def __str__(self) -> str:
         str_ = ""
