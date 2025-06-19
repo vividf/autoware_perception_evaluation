@@ -87,9 +87,9 @@ class Map:
             aph_per_threshold = []
 
             for threshold, object_results in object_results_dict[label].items():
-                print("MAP: target label: ", label, " threshold: ", threshold)
-                print("object_results size: ", len(object_results))
-                self.print_object_result_summary(object_results)
+                # print("MAP: target label: ", label, " threshold: ", threshold)
+                # print("object_results size: ", len(object_results))
+                # self.print_object_result_summary(object_results)
 
                 num_ground_truth = num_ground_truth_dict[label]
                 ap = Ap(
