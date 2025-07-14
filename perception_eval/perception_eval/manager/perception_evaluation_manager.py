@@ -154,6 +154,9 @@ class PerceptionEvaluationManager(_EvaluationManagerBase):
             filtered_estimated_objects (List[ObjectType]): Filtered list of estimated objects.
             filtered_frame_ground_truth (FrameGroundTruth): Ground truth frame with filtered objects.
         """
+        # debug message
+        print("in filter_objects")
+
         estimated_objects = filter_objects(
             dynamic_objects=estimated_objects,
             is_gt=False,
@@ -188,6 +191,7 @@ class PerceptionEvaluationManager(_EvaluationManagerBase):
                 A nested dictionary mapping from matching mode → label → threshold
                 to a list of matched object results.
         """
+        print("in match_nuscene_objects")
 
         matcher = NuscenesObjectMatcher(
             evaluation_task=self.evaluation_task,
@@ -241,6 +245,7 @@ class PerceptionEvaluationManager(_EvaluationManagerBase):
         Returns:
             scene_metrics_score (MetricsScore): MetricsScore instance.
         """
+        print("in get_scene_result")
         # Gather objects from frame results
         target_labels: List[LabelType] = self.target_labels
 
@@ -279,6 +284,8 @@ class PerceptionEvaluationManager(_EvaluationManagerBase):
                 accumulate_nuscene_results(flattened_nuscene_object_results_dict, frame.nuscene_object_results)
 
             used_frame.append(int(frame.frame_name))
+
+        print("in get_scene_result 2")
 
         scene_metrics_score: MetricsScore = MetricsScore(
             config=self.metrics_config,

@@ -66,6 +66,8 @@ class DynamicObjectWithPerceptionResult:
             ground_truth_objects (Optional[ObjectType]): The list of Ground truth objects
             matching_label_policy (MatchingLabelPolicy, optional): Matching policy considering labels between estimation and GT.
         """
+
+        print("in DynamicObjectWithPerceptionResult")
         if ground_truth_object is not None:
             assert isinstance(
                 estimated_object, type(ground_truth_object)

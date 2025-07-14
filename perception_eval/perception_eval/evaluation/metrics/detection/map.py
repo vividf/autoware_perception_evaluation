@@ -82,6 +82,8 @@ class Map:
         self.label_to_aphs: Dict[LabelType, List[Ap]] = {} if not self.is_detection_2d else None
         self.label_mean_to_aph: Dict[LabelType, float] = {} if not self.is_detection_2d else None
 
+        print("in MAP")
+
         for label in target_labels:
             ap_per_threshold = []
             aph_per_threshold = []

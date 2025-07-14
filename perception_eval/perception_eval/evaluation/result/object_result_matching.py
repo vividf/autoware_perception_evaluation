@@ -145,6 +145,7 @@ class NuscenesObjectMatcher:
                   ...
                 }
         """
+        print("in match")
         # Use functools.partial instead of lambda to ensure the nested defaultdict structure is pickleable.
         nuscene_object_results: Dict[
             MatchingMode, Dict[LabelType, Dict[float, List[DynamicObjectWithPerceptionResult]]]
@@ -177,6 +178,7 @@ class NuscenesObjectMatcher:
 
         This method matches objects only within the same label category.
         """
+        print("in _match_with_default_policy")
         label_to_est_objs: Dict[LabelType, List[ObjectType]] = defaultdict(list)
         label_to_gt_objs: Dict[LabelType, List[ObjectType]] = defaultdict(list)
 
@@ -216,6 +218,7 @@ class NuscenesObjectMatcher:
 
         This method allows matching across different label categories.
         """
+        print("in _match_with_allow_policy")
         for matching_mode, label_to_thresholds_map in self.matching_config_map.items():
             matching_method_module, _ = _get_matching_module(matching_mode)
 
@@ -261,6 +264,7 @@ class NuscenesObjectMatcher:
         Returns:
             A dictionary mapping each threshold to its list of matching results.
         """
+        print("in _get_threshold_to_results_map")
         threshold_to_results: Dict[float, List[DynamicObjectWithPerceptionResult]] = {}
 
         matching_matrix = self._compute_matching_matrix(
@@ -333,6 +337,7 @@ class NuscenesObjectMatcher:
             2D numpy array with shape (num_est, num_gt) storing MatchingMethod instances.
             None if either input is empty.
         """
+        print("in _compute_matching_matrix")
         if not estimated_objects or not ground_truth_objects:
             return None
 
@@ -368,6 +373,7 @@ class NuscenesObjectMatcher:
             Optional[Tuple[int, MatchingMethod]]: A tuple containing the index of the selected ground truth object
                 and its corresponding `MatchingMethod`, or `None` if no valid unmatched match is found.
         """
+        print("in _find_best_match")
         best_gt_idx = None
         best_matching = None
 
@@ -420,6 +426,8 @@ def get_object_results(
     Returns:
         object_results (List[DynamicObjectWithPerceptionResult]): Object results list.
     """
+
+    print("in get_object_results 1")
     # There is no estimated object (= all FN)
     if not estimated_objects:
         return []
@@ -444,6 +452,7 @@ def get_object_results(
         return _get_object_results_with_id(estimated_objects, ground_truth_objects)
 
     matching_method_module, maximize = _get_matching_module(matching_mode)
+    print("in get_object_results 2")
     score_table: np.ndarray = _get_score_table(
         estimated_objects,
         ground_truth_objects,
@@ -453,7 +462,7 @@ def get_object_results(
         matchable_thresholds,
         transforms,
     )
-
+    print("in get_object_results 3")
     scores = score_table[..., 0]
     is_valid = score_table[..., 1]
     masked_scores = np.where(is_valid, scores, np.nan)
@@ -484,7 +493,7 @@ def get_object_results(
 
         score_table = np.delete(score_table, est_idx, axis=0)
         score_table = np.delete(score_table, gt_idx, axis=1)
-
+    print("in get_object_results 4")
     # 2. Matching the nearest estimated objects and GTs regardless of their label
     rest_scores = score_table[..., 0]
     num_rest_estimation, *_ = score_table.shape
@@ -513,6 +522,7 @@ def get_object_results(
     if len(estimated_objects_) > 0 and evaluation_task.is_fp_validation() is False:
         object_results += _get_fp_object_results(estimated_objects_)
 
+    print("in get_object_results 5")
     return object_results
 
 
